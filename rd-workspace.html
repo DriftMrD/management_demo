@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>研测工作专区</title>
+  <link rel="stylesheet" href="styles.css?v=20260724rd3" />
+</head>
+<body>
+  <div class="page iterations-page rd-workspace-page">
+    <header class="page-header iterations-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="iteration.html">迭代管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">研测工作专区</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>研测工作专区</h1>
+          <p>按迭代追踪研测前置、开发测试状态与质量/代码指标</p>
+        </div>
+        <div class="quick-filters iterations-toolbar">
+          <div class="search-box">
+            <img src="assets/icons/search.svg" alt="" />
+            <input id="rd-search-input" type="text" placeholder="搜索迭代号..." />
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="rd-product-filter-btn" type="button">
+              <span>所属产品: <b id="rd-product-filter-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="rd-product-dropdown" hidden></div>
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="rd-dev-filter-btn" type="button">
+              <span>开发状态: <b id="rd-dev-filter-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="rd-dev-dropdown" hidden></div>
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="rd-test-filter-btn" type="button">
+              <span>测试状态: <b id="rd-test-filter-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="rd-test-dropdown" hidden></div>
+          </div>
+          <button class="btn-secondary" id="btn-export-rd" type="button">
+            <img src="assets/icons/upload-cloud.svg" alt="" />
+            <span>导出数据</span>
+          </button>
+          <label class="progress-done-toggle" title="勾选后隐藏开发与测试均已完成的迭代">
+            <input type="checkbox" id="rd-hide-done-toggle" />
+            <span>隐藏已完成</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main class="table-outer iterations-table-outer">
+      <div class="table-wrapper">
+        <table class="iterations-data-table rd-workspace-table">
+          <thead>
+            <tr class="iterations-table-header">
+              <th class="th-product">所属产品</th>
+              <th class="th-iter">迭代</th>
+              <th class="th-rd-count sortable" data-key="total">总需求个数 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-rd-count sortable" data-key="remaining">剩余需求个数 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="pre">前置状态 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="dev">开发状态 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="test">测试状态 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-rd-num sortable" data-key="bug">BUG数量 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-rd-num sortable" data-key="gerritAdd">Gerrit增加代码行数 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-rd-num sortable" data-key="gerritDel">Gerrit删除代码行数 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-rd-num sortable" data-key="di">DI解决率 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+            </tr>
+          </thead>
+          <tbody id="rd-workspace-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="rd-total-count">共 0 条迭代记录</span>
+      <div class="pagination" id="rd-pagination"></div>
+    </footer>
+  </div>
+
+  <script src="data.js?v=20260724rd3"></script>
+  <script src="rd-workspace.js?v=20260724rd3"></script>
+</body>
+</html>

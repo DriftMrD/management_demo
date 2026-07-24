@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>迭代管理系统</title>
+  <link rel="stylesheet" href="styles.css?v=20260720ag" />
+</head>
+<body>
+  <div class="home-shell">
+    <aside class="home-sidebar" id="home-sidebar" aria-label="项目管理导航">
+      <div class="home-sidebar-top">
+        <a class="home-sidebar-title" href="index.html">项目管理</a>
+        <button type="button" class="home-collapse-btn" id="home-collapse-btn" aria-label="收起导航" aria-expanded="true">
+          <img src="assets/icons/chevron-down.svg" alt="" class="home-collapse-icon" />
+        </button>
+      </div>
+      <nav class="home-sidebar-nav">
+        <a class="home-nav-item" href="requirements.html">需求管理系统</a>
+        <a class="home-nav-item active" href="iteration.html">迭代管理系统</a>
+      </nav>
+    </aside>
+
+    <div class="home-main-panel">
+      <header class="home-main-header">
+        <nav class="breadcrumb home-breadcrumb">
+          <a class="crumb crumb-link" href="index.html">项目管理</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <span class="crumb current">迭代管理系统</span>
+        </nav>
+        <div class="home-intro">
+          <h1>迭代管理系统</h1>
+          <p>跨产品线迭代节奏与排期可视化平台，覆盖迭代管理、甘特排期全流程</p>
+        </div>
+      </header>
+
+      <main class="home-main-body">
+        <h2 class="home-section-label">系统功能模块</h2>
+        <section class="home-module-row" aria-label="功能模块">
+          <a class="home-module-card" href="iterations.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/list.svg" alt="" />
+                <h3>迭代管理看板</h3>
+              </div>
+              <p>维护迭代代号、排期周期与阶段节奏，查看关联需求规模</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="iteration-count-badge">0个迭代</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
+
+
+          <a class="home-module-card" href="rd-workspace.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/layout-dashboard.svg" alt="" />
+                <h3>研测工作专区</h3>
+              </div>
+              <p>追踪迭代研测进展、BUG 与代码变更、DI 解决率等研测指标</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="rd-workspace-count-badge">0个迭代</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
+
+          <a class="home-module-card" href="gantt.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/bar-chart.svg" alt="" />
+                <h3>甘特图看板</h3>
+              </div>
+              <p>按需求展示 PRD / UX / UI / 开发 / 测试阶段时间轴</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="gantt-count-badge">0条排期</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260724rd1"></script>
+  <script>
+    document.getElementById("iteration-count-badge").textContent = `${ITERATIONS.length}个迭代`;
+    document.getElementById("rd-workspace-count-badge").textContent = `${ITERATIONS.length}个迭代`;
+    document.getElementById("gantt-count-badge").textContent = `${getGanttRows().length}条排期`;
+
+    const sidebar = document.getElementById("home-sidebar");
+    const collapseBtn = document.getElementById("home-collapse-btn");
+    collapseBtn.addEventListener("click", () => {
+      const collapsed = sidebar.classList.toggle("collapsed");
+      collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+      collapseBtn.setAttribute("aria-label", collapsed ? "展开导航" : "收起导航");
+    });
+  </script>
+</body>
+</html>

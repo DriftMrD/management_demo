@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>研测工作详情</title>
+  <link rel="stylesheet" href="styles.css?v=20260724rd15" />
+</head>
+<body>
+  <div class="page iteration-detail-page rd-detail-page is-drawer-collapsed">
+    <aside class="iter-drawer" id="iter-drawer" aria-label="迭代抽屉">
+      <div class="iter-drawer-header">
+        <div class="iter-drawer-product-wrap" id="drawer-product-wrap">
+          <button type="button" class="iter-drawer-brand" id="drawer-product-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="iter-drawer-product-icon" id="drawer-product-icon">—</span>
+            <span class="iter-drawer-product-name" id="drawer-product-name">—</span>
+            <img class="iter-drawer-product-caret" src="assets/icons/drawer-chevron-down.svg" alt="" />
+          </button>
+          <div class="iter-drawer-product-menu" id="drawer-product-menu" hidden role="listbox"></div>
+        </div>
+        <button type="button" class="iter-drawer-collapse-btn" id="drawer-collapse-btn" aria-label="收起抽屉">
+          <img src="assets/icons/chevron-left.svg" alt="" />
+        </button>
+      </div>
+      <div class="iter-drawer-section-title">全部迭代</div>
+      <div class="iter-drawer-list" id="drawer-iter-list"></div>
+    </aside>
+    <button type="button" class="iter-drawer-expand-btn" id="drawer-expand-btn" aria-label="展开抽屉">
+      <img src="assets/icons/chevron-right.svg" alt="" />
+    </button>
+
+    <div class="iter-detail-body">
+      <div class="iteration-detail-topnav">
+        <nav class="breadcrumb">
+          <a class="crumb crumb-link" href="index.html">项目管理</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <a class="crumb crumb-link" href="iteration.html">迭代管理系统</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <a class="crumb crumb-link" href="rd-workspace.html">研测工作专区</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <span class="crumb current" id="detail-breadcrumb-name">—</span>
+        </nav>
+      </div>
+
+      <header class="iteration-detail-header">
+        <div class="iteration-detail-title-row">
+          <div class="iteration-detail-title-left">
+            <h1 id="detail-iter-name">—</h1>
+            <div class="iteration-detail-meta-tags" id="detail-meta-tags"></div>
+          </div>
+          <div class="rd-detail-header-right">
+            <div class="iteration-detail-date-range">
+              <img src="assets/icons/calendar.svg" alt="" />
+              <span id="detail-date-range">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="rd-detail-header-schedule" id="detail-header-schedule"></div>
+      </header>
+
+      <main class="iteration-detail-main" id="detail-main">
+        <div class="iter-detail-tab-panel" id="panel-overview" data-panel="overview">
+          <section class="iter-detail-card" id="panel-overview-reqs">
+            <div class="iter-detail-card-header">
+              <div class="iter-detail-card-title-group">
+                <img class="iter-detail-card-icon" src="assets/icons/icon-requirements.svg" alt="" />
+                <h2 class="iter-detail-card-title">所属需求</h2>
+                <button type="button" class="btn-primary" id="btn-rd-submit-test">一键转测</button>
+              </div>
+              <div class="search-box rd-detail-req-search">
+                <img src="assets/icons/search.svg" alt="" />
+                <input id="rd-req-search" type="text" placeholder="搜索需求名称 / 编号..." />
+              </div>
+            </div>
+            <div class="iter-detail-reqs-table-wrap">
+              <table class="iter-detail-reqs-table rd-detail-reqs-table">
+                <thead>
+                  <tr>
+                    <th class="col-name">所属需求</th>
+                    <th class="col-value">价值点</th>
+                    <th class="col-priority">优先级</th>
+                    <th class="col-type">落地类型</th>
+                    <th class="col-version">落地版本</th>
+                    <th class="col-prd">PRD</th>
+                    <th class="col-ai-prd">AI PRD</th>
+                    <th class="col-ai-demo">AI Demo</th>
+                    <th class="col-ai-track">AI 埋点</th>
+                    <th class="col-ux">UX 链接</th>
+                    <th class="col-ui">UI 链接</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-req-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="iter-detail-card" id="panel-rd-work">
+            <div class="iter-detail-card-header">
+              <div class="iter-detail-card-title-group">
+                <img class="iter-detail-card-icon" src="assets/icons/settings.svg" alt="" />
+                <h2 class="iter-detail-card-title">研测信息</h2>
+              </div>
+            </div>
+            <div class="iter-detail-inner-table-wrap">
+              <table class="iter-detail-inner-table rd-work-table">
+                <thead>
+                  <tr>
+                    <th class="col-work-req">所属需求</th>
+                    <th class="col-work-dev-st">开发状态</th>
+                    <th class="col-work-ver">提测版本</th>
+                    <th class="col-work-link">提测链接</th>
+                    <th class="col-work-owner">提测人</th>
+                    <th class="col-work-advice">提测建议</th>
+                    <th class="col-work-test-st">测试状态</th>
+                    <th class="col-work-result">测试结论</th>
+                    <th class="col-work-report">测试报告</th>
+                    <th class="col-work-note">测试备注</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-work-tbody"></tbody>
+              </table>
+            </div>
+            <div class="iter-detail-more-slot">
+              <button type="button" class="iter-detail-more-link" id="detail-work-more-btn" hidden>查看更多 &gt;</button>
+            </div>
+          </section>
+
+          <section class="iter-detail-card iter-detail-apk-card">
+            <div class="iter-detail-card-header">
+              <div class="iter-detail-card-title-group">
+                <img class="iter-detail-card-icon" src="assets/icons/package.svg" alt="" />
+                <h2 class="iter-detail-card-title">APK 与迭代信息</h2>
+              </div>
+            </div>
+            <div class="iter-detail-apk-grid" id="detail-apk-grid"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 一键转测 -->
+  <div class="modal-overlay" id="rd-submit-modal" hidden>
+    <div class="modal modal-schedule rd-submit-modal" role="dialog" aria-modal="true" aria-labelledby="rd-submit-modal-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="rd-submit-modal-title">一键转测</h2>
+        <button class="modal-close schedule-close-btn" id="rd-submit-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>选择需求</label>
+          <div class="rd-submit-req-list" id="rd-submit-req-list"></div>
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>提测版本</label>
+          <input class="field-input" id="rd-submit-version" type="text" placeholder="如 17.0.0.001" />
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>提测链接</label>
+          <input class="field-input" id="rd-submit-link" type="url" placeholder="https://" />
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>提测人</label>
+          <div class="select-wrap" id="rd-submit-owner-wrap">
+            <button type="button" class="field-select" id="rd-submit-owner-btn">
+              <span class="select-text placeholder" id="rd-submit-owner-text" data-placeholder="请选择提测人">请选择提测人</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="select-menu" id="rd-submit-owner-menu" hidden></div>
+            <input type="hidden" id="rd-submit-owner" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">提测建议</label>
+          <textarea class="field-input rd-submit-note" id="rd-submit-note" rows="3" placeholder="可选，填写提测说明"></textarea>
+        </div>
+        <div class="field" id="rd-submit-feedback-field">
+          <label class="field-label" id="rd-submit-feedback-label">
+            <span class="req" id="rd-submit-feedback-req" hidden>*</span>对 AI PRD 的反馈
+          </label>
+          <textarea class="field-input rd-submit-note" id="rd-submit-feedback" rows="3" placeholder="勾选需求含 AI PRD 时必填"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-secondary" id="rd-submit-modal-cancel">取消</button>
+        <button type="button" class="btn-primary" id="rd-submit-modal-save">确认转测</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看更多：研测信息 -->
+  <div class="modal-overlay" id="rd-info-more-modal" hidden>
+    <div class="modal modal-schedule rd-info-more-modal" role="dialog" aria-modal="true" aria-labelledby="rd-info-more-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="rd-info-more-title">全部研测记录</h2>
+        <button class="modal-close schedule-close-btn" id="rd-info-more-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="iter-detail-inner-table-wrap">
+          <table class="iter-detail-inner-table rd-work-table" id="rd-info-more-table">
+            <thead>
+              <tr>
+                <th>所属需求</th>
+                <th>开发状态</th>
+                <th>提测版本</th>
+                <th>提测链接</th>
+                <th>提测人</th>
+                <th>提测建议</th>
+                <th>测试状态</th>
+                <th>测试结论</th>
+                <th>测试报告</th>
+                <th>测试备注</th>
+              </tr>
+            </thead>
+            <tbody id="rd-info-more-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-primary" id="rd-info-more-ok">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260724rd2"></script>
+  <script src="rd-workspace-detail.js?v=20260724rd15"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI提效进展</title>
+  <link rel="stylesheet" href="styles.css?v=20260723ae" />
+</head>
+<body>
+  <div class="page progress-page">
+    <nav class="breadcrumb">
+      <a class="crumb crumb-link" href="index.html">项目管理</a>
+      <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+      <a class="crumb crumb-link" href="requirements.html">需求管理系统</a>
+      <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+      <a class="crumb crumb-link" href="efficiency.html">AI提效看板</a>
+      <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+      <span class="crumb current">提效进展</span>
+    </nav>
+
+    <header class="progress-header">
+      <div class="progress-title-row">
+        <h1>AI提效进展</h1>
+        <div class="view-toggle" id="progress-tab-toggle" role="group" aria-label="进展视图切换">
+          <button type="button" class="toggle-btn active" data-tab="week">周进展视图</button>
+          <button type="button" class="toggle-btn" data-tab="overall" disabled title="暂未开放">整体进展视图</button>
+        </div>
+      </div>
+      <p>追踪AI需求每周更新与整体迭代分布</p>
+    </header>
+
+    <section class="progress-view" id="progress-week-view">
+      <div class="progress-controls">
+        <div class="week-selector" id="week-selector">
+          <button type="button" class="week-nav-btn" id="week-prev" aria-label="上一周">←</button>
+          <button type="button" class="week-label-btn" id="week-label-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="week-label" id="week-label">2026年 第29周（7.14 - 7.20）</span>
+            <img class="week-label-chevron" src="assets/icons/chevron-down.svg" alt="" />
+          </button>
+          <button type="button" class="week-nav-btn" id="week-next" aria-label="下一周">→</button>
+          <div class="dropdown week-dropdown" id="week-dropdown" hidden role="listbox"></div>
+        </div>
+        <div class="progress-summary-badge" id="week-summary">本周共更新 0 项，涉及 0 个需求</div>
+      </div>
+
+      <div class="progress-sections" id="week-sections"></div>
+    </section>
+
+    <section class="progress-view" id="progress-overall-view" hidden>
+      <div class="progress-section-card" id="overall-list-wrap">
+        <div class="progress-section-header">
+          <div class="progress-section-title">
+            <span class="progress-dot"></span>
+            <span>按迭代分布</span>
+          </div>
+          <span class="progress-count-badge" id="overall-count">0 条需求</span>
+        </div>
+        <div class="progress-table-wrap">
+          <div class="progress-table-header progress-overall-row">
+            <div class="pth col-iter">迭代代号</div>
+            <div class="pth col-num">需求数</div>
+            <div class="pth col-num">含 AI PRD</div>
+            <div class="pth col-num">含 AI Demo</div>
+            <div class="pth col-num">含 AI 埋点</div>
+          </div>
+          <div class="progress-table-body" id="overall-tbody"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="progress-feedback-modal" hidden>
+    <div class="modal eff-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="progress-feedback-title">
+      <div class="modal-header">
+        <h2 id="progress-feedback-title">研发对AI PRD的反馈</h2>
+        <button class="modal-close" id="progress-feedback-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="progress-feedback-req-title"></strong>
+      </div>
+      <div class="modal-body eff-feedback-body" id="progress-feedback-list"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="progress-feedback-ok">关闭</button>
+        <button type="button" class="btn-primary" id="progress-feedback-add" disabled title="暂不支持添加反馈">
+          <img src="assets/icons/plus.svg" alt="" />
+          <span>添加反馈</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260720y"></script>
+  <script src="progress.js?v=20260720y"></script>
+</body>
+</html>

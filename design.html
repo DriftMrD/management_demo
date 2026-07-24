@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>需求设计看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260723bk" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="requirements.html">需求管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">需求设计看板</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>需求设计看板</h1>
+          <p>追踪需求 UX / UI 排期与设计交付物</p>
+        </div>
+        <div class="quick-filters">
+          <div class="search-box">
+            <img src="assets/icons/search.svg" alt="" />
+            <input id="design-search-input" type="text" placeholder="搜索需求名称..." />
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="design-product-filter-btn" type="button">
+              <img src="assets/icons/filter.svg" alt="" />
+              <span>所属产品: <b id="design-product-filter-value">全部</b></span>
+            </button>
+            <div class="dropdown" id="design-product-dropdown" hidden></div>
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="design-priority-filter-btn" type="button">
+              <span>优先级: <b id="design-priority-filter-value">全部</b></span>
+            </button>
+            <div class="dropdown" id="design-priority-dropdown" hidden></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="table-outer design-table-outer">
+      <div class="table-wrapper">
+        <div class="table-header design-table-header">
+          <div class="th th-title">需求名称</div>
+          <div class="th w-60 centered sortable" data-key="isValue">价值点 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-90 sortable" data-key="product">所属产品 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-70 centered sortable" data-key="priority">优先级 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-90 sortable" data-key="type">落地类型 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-80 sortable" data-key="version">落地版本 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-160">AI PRD</div>
+          <div class="th w-140">PRD</div>
+          <div class="th w-160">AI Demo</div>
+          <div class="th w-140 sortable" data-key="uxTime">UX时间 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-140 sortable" data-key="uiTime">UI时间 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-180">UI 交付物</div>
+          <div class="th w-180">UX 交付物</div>
+        </div>
+        <div class="table-body" id="design-tbody"></div>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="design-total-count">共 0 条需求</span>
+      <div class="pagination" id="design-pagination"></div>
+    </footer>
+  </div>
+
+  <script src="data.js?v=20260723doc2"></script>
+  <script src="design.js?v=20260723doc5"></script>
+</body>
+</html>

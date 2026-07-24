@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>需求周进展看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260723ae" />
+</head>
+<body>
+  <div class="page weekly-page">
+    <header class="page-header weekly-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="requirements.html">需求管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">需求周进展看板</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>需求周进展看板</h1>
+          <p>追踪全部需求的周进展、风险项与运营事项，前序字段同步自需求池</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="weekly-toolbar">
+      <div class="weekly-toolbar-left">
+        <div class="week-selector" id="week-selector">
+          <button type="button" class="week-nav-btn" id="week-prev" aria-label="上一周">←</button>
+          <button type="button" class="week-label-btn" id="week-label-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="week-label" id="week-label">2026年 第29周（7.14 - 7.20）</span>
+            <img class="week-label-chevron" src="assets/icons/chevron-down.svg" alt="" />
+          </button>
+          <button type="button" class="week-nav-btn" id="week-next" aria-label="下一周">→</button>
+          <div class="dropdown week-dropdown" id="week-dropdown" hidden role="listbox"></div>
+        </div>
+      </div>
+      <div class="weekly-toolbar-right">
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="weekly-product-filter-btn" type="button">
+            <img src="assets/icons/filter.svg" alt="" />
+            <span>所属产品: <b id="weekly-product-filter-value">全部</b></span>
+          </button>
+          <div class="dropdown" id="weekly-product-dropdown" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <main class="table-outer weekly-table-outer">
+      <div class="table-wrapper">
+        <div class="table-header weekly-table-header">
+          <div class="th th-title">需求名称</div>
+          <div class="th w-100">所属产品</div>
+          <div class="th w-100 sortable" data-key="status">进展状态 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-80 sortable" data-key="priority">优先级 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-100 sortable" data-key="type">落地类型 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-90 sortable" data-key="version">落地版本 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-180">周进展</div>
+          <div class="th w-160">风险项</div>
+          <div class="th w-160">运营事项</div>
+        </div>
+        <div class="table-body" id="weekly-tbody"></div>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="weekly-total-count">共 0 条需求</span>
+      <div class="pagination" id="weekly-pagination"></div>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="weekly-overview-modal" hidden>
+    <div class="modal eff-feedback-modal weekly-note-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-overview-title">
+      <div class="modal-header">
+        <h2 id="weekly-overview-title">需求周进展</h2>
+        <button class="modal-close" id="weekly-overview-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="weekly-overview-req-title"></strong>
+        <span class="weekly-overview-week" id="weekly-overview-week"></span>
+      </div>
+      <div class="modal-body weekly-note-body">
+        <div class="field">
+          <label class="field-label">周进展</label>
+          <textarea class="field-textarea" id="weekly-overview-progress" rows="3" placeholder="请输入本周进展，如：本周完成 xxx，当前开发中…"></textarea>
+          <p class="weekly-note-hint">由产品填写</p>
+        </div>
+        <div class="field">
+          <label class="field-label">风险项</label>
+          <textarea class="field-textarea" id="weekly-overview-risk" rows="3" placeholder="请输入风险项，无可留空"></textarea>
+          <p class="weekly-note-hint">由产品填写</p>
+        </div>
+        <div class="field">
+          <label class="field-label">运营事项</label>
+          <textarea class="field-textarea" id="weekly-overview-ops" rows="3" placeholder="请输入运营事项，无可留空"></textarea>
+          <p class="weekly-note-hint">由运营填写</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="weekly-overview-cancel">取消</button>
+        <button type="button" class="btn-primary" id="weekly-overview-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="weekly-note-modal" hidden>
+    <div class="modal eff-feedback-modal weekly-note-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-note-title">
+      <div class="modal-header">
+        <h2 id="weekly-note-title">周进展</h2>
+        <button class="modal-close" id="weekly-note-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="weekly-note-req-title"></strong>
+      </div>
+      <div class="modal-body weekly-note-body">
+        <div class="field">
+          <label class="field-label" id="weekly-note-field-label">内容</label>
+          <textarea class="field-textarea" id="weekly-note-content" rows="6" placeholder="请输入内容..."></textarea>
+          <p class="weekly-note-hint" id="weekly-note-hint"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="weekly-note-cancel">取消</button>
+        <button type="button" class="btn-primary" id="weekly-note-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260720af"></script>
+  <script src="weekly.js?v=20260720af"></script>
+</body>
+</html>

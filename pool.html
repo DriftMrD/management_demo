@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>需求池看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260723bf" />
+</head>
+<body>
+  <div class="page">
+    <!-- 页头 -->
+    <header class="page-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="requirements.html">需求管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">需求池看板</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>需求池看板</h1>
+          <p>用于汇总、筛选、排期及管理团队内跨产品线的全维度需求任务</p>
+        </div>
+        <div class="quick-filters">
+          <div class="search-box">
+            <img src="assets/icons/search.svg" alt="" />
+            <input id="search-input" type="text" placeholder="搜索需求名称..." />
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="product-filter-btn">
+              <img src="assets/icons/filter.svg" alt="" />
+              <span>所属产品: <b id="product-filter-value">全部</b></span>
+            </button>
+            <div class="dropdown" id="product-dropdown" hidden></div>
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="priority-filter-btn">
+              <span>优先级: <b id="priority-filter-value">全部</b></span>
+            </button>
+            <div class="dropdown" id="priority-dropdown" hidden></div>
+          </div>
+          <div class="view-toggle" id="view-toggle">
+            <a class="toggle-btn active" href="pool.html" data-view="list">列表视图</a>
+            <a class="toggle-btn" href="pool.html?view=board" data-view="board">卡片看板</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn-secondary" id="btn-export">导出需求文档</button>
+      <button class="btn-primary" id="btn-add" type="button">
+        <img src="assets/icons/plus.svg" alt="" />
+        <span>新建需求</span>
+      </button>
+    </div>
+
+    <!-- 列表视图 -->
+    <main class="table-outer" id="list-view">
+      <div class="table-wrapper">
+        <div class="table-header">
+          <div class="th th-title">需求名称</div>
+          <div class="th w-110 sortable" data-key="product">所属产品 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-100 sortable" data-key="status">进展状态 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-80 sortable" data-key="priority">优先级 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-100 sortable" data-key="type">落地类型 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-120 sortable" data-key="isValue">价值点需求 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-120 sortable" data-key="owner">产品负责人 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-110 sortable" data-key="requestDate">需求提出日期 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-110 sortable" data-key="deliverMonth">目标交付月 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-90 sortable centered" data-key="version">落地版本 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-110 centered">操作</div>
+        </div>
+        <div class="table-body" id="table-body"></div>
+      </div>
+    </main>
+
+    <!-- 卡片看板视图 -->
+    <main class="board-outer" id="board-view" hidden></main>
+
+    <!-- 分页 -->
+    <footer class="pagination-bar">
+      <span id="total-count">共 7 条需求</span>
+      <div class="pagination" id="pagination"></div>
+    </footer>
+  </div>
+
+  <!-- 新建需求弹窗 -->
+  <div class="modal-overlay" id="create-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 id="modal-title">新建需求</h2>
+        <button class="modal-close" id="modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+
+      <form class="modal-body" id="create-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>需求名称</label>
+          <input class="field-input" id="f-title" type="text" placeholder="请输入需求名称" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label">需求详情</label>
+          <textarea class="field-textarea" id="f-detail" placeholder="请输入需求背景、用户诉求、落地价值、具体需求内容..."></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>所属产品</label>
+            <div class="select-wrap" data-select="product">
+              <button type="button" class="field-select" id="f-product-btn">
+                <span class="select-text placeholder" id="f-product-text">请选择所属产品</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="f-product" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>产品负责人</label>
+            <div class="select-wrap" data-select="owner">
+              <button type="button" class="field-select" id="f-owner-btn">
+                <span class="select-text placeholder" id="f-owner-text">请选择产品负责人</span>
+                <img src="assets/icons/user.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="f-owner" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>进展状态</label>
+            <div class="select-wrap" data-select="status">
+              <button type="button" class="field-select" id="f-status-btn">
+                <span class="select-text" id="f-status-text">未启动</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="f-status" value="未启动" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>优先级</label>
+            <div class="select-wrap" data-select="priority">
+              <button type="button" class="field-select" id="f-priority-btn">
+                <span class="select-text placeholder" id="f-priority-text">请选择优先级 (P0/P1/P2)</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="f-priority" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地类型</label>
+            <div class="radio-group" id="f-type-group">
+              <label class="radio-item">
+                <input type="radio" name="f-type" value="敏捷迭代" />
+                <span class="radio-dot"></span>
+                <span>敏捷迭代</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="f-type" value="TOS版本" />
+                <span class="radio-dot"></span>
+                <span>TOS版本</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地版本</label>
+            <input class="field-input" id="f-version" type="text" placeholder="请输入落地版本，如 16.3" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否是价值点需求</label>
+            <div class="radio-group" id="f-value-group">
+              <label class="radio-item">
+                <input type="radio" name="f-value" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="f-value" value="false" />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否需要数据分析</label>
+            <div class="radio-group" id="f-analytics-group">
+              <label class="radio-item">
+                <input type="radio" name="f-analytics" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="f-analytics" value="false" />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>需求提出日期</label>
+            <div class="date-wrap">
+              <input class="field-input" id="f-request-date" type="date" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>目标交付月</label>
+            <div class="date-wrap">
+              <input class="field-input" id="f-deliver-month" type="month" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">相关附件</label>
+          <div class="upload-box" id="upload-box">
+            <img src="assets/icons/upload.svg" alt="" />
+            <p>点击或拖拽上传文件</p>
+            <input type="file" id="f-file" hidden multiple />
+          </div>
+          <ul class="upload-list" id="upload-list"></ul>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="modal-cancel">取消</button>
+        <button type="submit" form="create-form" class="btn-primary" id="modal-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 需求详情弹窗 -->
+  <div class="modal-overlay detail-drawer-overlay" id="detail-modal" hidden>
+    <div class="modal detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="modal-header">
+        <h2 id="detail-title">需求详情</h2>
+        <button class="modal-close" id="detail-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+
+      <form class="modal-body" id="detail-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>需求名称</label>
+          <input class="field-input" id="d-title" type="text" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label">需求详情</label>
+          <textarea class="field-textarea" id="d-detail"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>所属产品</label>
+            <div class="select-wrap" data-select="product">
+              <button type="button" class="field-select" id="d-product-btn">
+                <span class="select-text" id="d-product-text" data-placeholder="请选择所属产品"></span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="d-product" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>产品负责人</label>
+            <div class="select-wrap" data-select="owner">
+              <button type="button" class="field-select" id="d-owner-btn">
+                <span class="select-text owner-select-text" id="d-owner-text" data-placeholder="请选择产品负责人"></span>
+                <img src="assets/icons/user.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="d-owner" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>进展状态</label>
+            <div class="select-wrap" data-select="status">
+              <button type="button" class="field-select" id="d-status-btn">
+                <span class="select-text" id="d-status-text" data-placeholder="请选择进展状态"></span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="d-status" required />
+            </div>
+            <p class="field-hint" id="d-status-lock-hint" hidden>当前状态不可手动修改</p>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>优先级</label>
+            <div class="select-wrap" data-select="priority">
+              <button type="button" class="field-select" id="d-priority-btn">
+                <span class="select-text" id="d-priority-text" data-placeholder="请选择优先级"></span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="d-priority" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地类型</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="d-type" value="敏捷迭代" checked />
+                <span class="radio-dot"></span>
+                <span>敏捷迭代</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="d-type" value="TOS版本" />
+                <span class="radio-dot"></span>
+                <span>TOS版本</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地版本</label>
+            <input class="field-input" id="d-version" type="text" placeholder="请输入落地版本，如 16.3" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否是价值点需求</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="d-value" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="d-value" value="false" checked />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否需要数据分析</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="d-analytics" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="d-analytics" value="false" checked />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>需求提出日期</label>
+            <div class="date-wrap">
+              <input class="field-input" id="d-request-date" type="date" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>目标交付月</label>
+            <div class="date-wrap">
+              <input class="field-input" id="d-deliver-month" type="month" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field" id="d-review-result-field" hidden>
+          <label class="field-label">评审结果</label>
+          <div class="review-result-display" id="d-review-result"></div>
+        </div>
+
+        <section class="detail-schedule-info" id="d-schedule-info" hidden>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">需求编号</label>
+              <input class="field-input" id="d-req-code" type="text" placeholder="如：IR-202604-000611" />
+            </div>
+            <div class="field">
+              <label class="field-label">PRD</label>
+              <div class="demo-edit-wrap">
+                <input class="field-input" id="d-prd-url" type="url" placeholder="https://" readonly />
+                <button type="button" class="demo-edit-btn" id="d-prd-url-edit" title="编辑" aria-label="编辑 PRD 链接">
+                  <img src="assets/icons/edit.svg" alt="" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">AI PRD</label>
+            <ul class="file-list" id="d-ai-prd-list"></ul>
+            <div class="upload-box" id="d-ai-prd-box">
+              <img src="assets/icons/upload.svg" alt="" />
+              <p>点击或拖拽上传文件</p>
+              <input type="file" id="d-ai-prd-file" hidden multiple />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">AI Demo</label>
+              <div class="demo-edit-wrap">
+                <input class="field-input" id="d-ai-demo" type="url" placeholder="https://" readonly />
+                <button type="button" class="demo-edit-btn" id="d-ai-demo-edit" title="编辑" aria-label="编辑 AI Demo">
+                  <img src="assets/icons/edit.svg" alt="" />
+                </button>
+              </div>
+            </div>
+            <div class="field" id="d-ai-track-field" hidden>
+              <label class="field-label">AI 埋点链接</label>
+              <div class="demo-edit-wrap">
+                <input class="field-input" id="d-ai-track" type="url" placeholder="填写埋点链接，如 https://track.example.com/..." readonly />
+                <button type="button" class="demo-edit-btn" id="d-ai-track-edit" title="编辑" aria-label="编辑 AI 埋点链接">
+                  <img src="assets/icons/edit.svg" alt="" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-involve-section" id="d-phase-needs-section" hidden>
+          <div class="field-label">涉及阶段</div>
+          <div class="detail-phase-needs" id="d-phase-needs" aria-label="涉及阶段">
+            <label class="schedule-involve-option" data-phase="prd">
+              <input type="checkbox" class="schedule-phase-check detail-phase-need-check" id="d-need-prd" data-phase="prd" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 PRD</span>
+            </label>
+            <label class="schedule-involve-option" data-phase="ux">
+              <input type="checkbox" class="schedule-phase-check detail-phase-need-check" id="d-need-ux" data-phase="ux" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 UX</span>
+            </label>
+            <label class="schedule-involve-option" data-phase="ui">
+              <input type="checkbox" class="schedule-phase-check detail-phase-need-check" id="d-need-ui" data-phase="ui" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 UI</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="detail-gantt-section" id="d-gantt-section" hidden>
+          <div class="detail-gantt-head">
+            <div class="detail-gantt-head-main">
+              <div class="detail-gantt-title">排期甘特</div>
+              <div class="detail-gantt-meta">
+                <span class="detail-gantt-meta-label">当前迭代：</span>
+                <div class="detail-gantt-iter-controls" id="d-gantt-iter-controls">
+                  <div class="select-wrap detail-gantt-iter-select" id="swap-iteration-wrap">
+                    <button type="button" class="detail-gantt-iter-trigger" id="swap-iteration-btn" aria-haspopup="listbox" aria-expanded="false">
+                      <span class="detail-gantt-iter-name" id="swap-iteration-text" data-placeholder="请选择迭代">-</span>
+                      <img class="detail-gantt-iter-chevron" src="assets/icons/gantt-dropdown.svg" alt="" width="12" height="12" />
+                    </button>
+                    <div class="select-menu iteration-menu detail-gantt-iter-menu" id="swap-iteration-menu" hidden></div>
+                    <input type="hidden" id="swap-iteration" />
+                  </div>
+                  <button type="button" class="detail-gantt-iter-add" id="swap-iteration-add" title="新增迭代" aria-label="新增迭代">
+                    <img src="assets/icons/gantt-add.svg" alt="" width="14" height="14" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-mini-gantt" id="d-mini-gantt"></div>
+          <div class="detail-gantt-dates-form" id="d-gantt-dates-form" hidden aria-hidden="true">
+            <input id="swap-prd-start" type="date" tabindex="-1" />
+            <input id="swap-prd-end" type="date" tabindex="-1" />
+            <input id="swap-ux-start" type="date" tabindex="-1" />
+            <input id="swap-ux-end" type="date" tabindex="-1" />
+            <input id="swap-ui-start" type="date" tabindex="-1" />
+            <input id="swap-ui-end" type="date" tabindex="-1" />
+            <input id="swap-dev-start" type="date" tabindex="-1" />
+            <input id="swap-dev-end" type="date" tabindex="-1" />
+            <input id="swap-test-start" type="date" tabindex="-1" />
+            <input id="swap-test-end" type="date" tabindex="-1" />
+          </div>
+          <p class="detail-gantt-reason" id="d-gantt-latest-reason" hidden></p>
+
+          <div class="detail-swap-panel" id="d-swap-panel" hidden>
+            <div class="schedule-tos-banner" id="swap-tos-banner" hidden>
+              <img src="assets/icons/info.svg" alt="" />
+              <p>TOS 类型需求由项管统一调整迭代，请填写原因后点击底部「保存修改」，将自动提醒项目管理同事</p>
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>修改原因</label>
+              <textarea class="field-textarea" id="swap-reason" rows="3" placeholder="请填写本次修改原因"></textarea>
+              <p class="field-hint" id="swap-latest-reason-hint" hidden></p>
+            </div>
+            <p class="detail-swap-save-hint">修改后请点击底部「保存修改」生效</p>
+          </div>
+        </section>
+
+        <div class="field">
+          <label class="field-label">相关附件</label>
+          <ul class="file-list" id="d-upload-list"></ul>
+          <div class="upload-box" id="d-upload-box">
+            <img src="assets/icons/upload.svg" alt="" />
+            <p>点击或拖拽上传文件</p>
+            <input type="file" id="d-file" hidden multiple />
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="detail-cancel">取消</button>
+        <button type="submit" form="detail-form" class="btn-primary" id="detail-save">保存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 填写评审结果 -->
+  <div class="modal-overlay" id="review-modal" hidden>
+    <div class="modal modal-review" role="dialog" aria-modal="true" aria-labelledby="review-modal-title">
+      <div class="modal-header review-modal-header">
+        <h2 id="review-modal-title">填写评审结果</h2>
+        <button class="modal-close review-close-btn" id="review-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body review-modal-body">
+        <div class="field">
+          <label class="field-label field-label-strong">需求名称</label>
+          <div class="readonly-input">
+            <span id="review-req-title"></span>
+            <img src="assets/icons/lock.svg" alt="" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label field-label-strong">评审结果<span class="req">*</span></label>
+          <div class="result-options" id="review-result-options">
+            <label class="result-option">
+              <input type="radio" name="review-result" value="通过" />
+              <span class="result-check"><img src="assets/icons/check.svg" alt="" /></span>
+              <span class="result-option-text">通过</span>
+            </label>
+            <label class="result-option">
+              <input type="radio" name="review-result" value="不通过" />
+              <span class="result-check"><img src="assets/icons/check.svg" alt="" /></span>
+              <span class="result-option-text">不通过</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label field-label-strong">评审备注</label>
+          <textarea class="field-textarea review-remark" id="review-remark" placeholder="请输入评审意见或说明..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer review-modal-footer">
+        <button type="button" class="btn-ghost" id="review-cancel">取消</button>
+        <button type="button" class="btn-primary btn-submit" id="review-confirm">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 需求排期 -->
+  <div class="modal-overlay" id="schedule-modal" hidden>
+    <div class="modal modal-schedule" id="schedule-modal-card" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="schedule-modal-title">需求排期</h2>
+        <button class="modal-close schedule-close-btn" id="schedule-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+
+      <div class="schedule-tos-banner" id="schedule-tos-banner" hidden>
+        <img src="assets/icons/info.svg" alt="" />
+        <p>TOS类型需求由项管统一排期，填写基础信息后可发送排期提醒</p>
+      </div>
+
+      <div class="modal-body schedule-modal-body">
+        <section class="schedule-section" id="schedule-section-basic">
+          <div class="schedule-section-title" id="schedule-basic-title">基础信息</div>
+          <div class="field-row schedule-name-code-row">
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>需求名称</label>
+              <div class="readonly-input schedule-readonly">
+                <span id="schedule-req-title"></span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>需求编号</label>
+              <input class="field-input" id="schedule-req-code" type="text" placeholder="请输入需求编号" />
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label">PRD</label>
+              <span class="field-hint">PRD 为传统 PRD，和 AI PRD 任选其一填写</span>
+            </div>
+            <input class="field-input" id="schedule-prd-url" type="url" placeholder="https://" />
+          </div>
+          <div class="field">
+            <label class="field-label">AI PRD</label>
+            <ul class="upload-list" id="schedule-prd-list"></ul>
+            <div class="upload-box upload-box-inline" id="schedule-prd-box">
+              <img src="assets/icons/cloud-upload.svg" alt="" />
+              <p>点击或拖拽上传文件</p>
+              <span class="upload-hint" id="schedule-prd-hint" hidden>支持 PDF, Word, Excel, Markdown 或 PRD 链接，大小不超过 50MB</span>
+              <input type="file" id="schedule-prd-file" hidden multiple />
+            </div>
+          </div>
+          <div class="field-row schedule-demo-row">
+            <div class="field">
+              <label class="field-label">AI Demo</label>
+              <input class="field-input" id="schedule-demo-url" type="url" placeholder="https://" />
+            </div>
+            <div class="field">
+              <label class="field-label">AI Demo时长估计</label>
+              <input class="field-input" id="schedule-demo-duration" type="text" placeholder="如：2h40min" />
+            </div>
+          </div>
+        </section>
+
+        <section class="schedule-section" id="schedule-section-involve">
+          <div class="schedule-section-title">涉及阶段</div>
+          <div class="schedule-involve-options" id="schedule-involve-list">
+            <label class="schedule-involve-option" data-phase="prd">
+              <input type="checkbox" class="schedule-phase-check" id="schedule-phase-prd" data-phase="prd" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 PRD</span>
+            </label>
+            <label class="schedule-involve-option" data-phase="ux">
+              <input type="checkbox" class="schedule-phase-check" id="schedule-phase-ux" data-phase="ux" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 UX</span>
+            </label>
+            <label class="schedule-involve-option" data-phase="ui">
+              <input type="checkbox" class="schedule-phase-check" id="schedule-phase-ui" data-phase="ui" />
+              <span class="schedule-involve-box" aria-hidden="true"></span>
+              <span class="schedule-involve-option-text">涉及 UI</span>
+            </label>
+            <!-- 开发/测试始终涉及 -->
+            <input type="checkbox" class="schedule-phase-check" id="schedule-phase-dev" data-phase="dev" checked disabled hidden />
+            <input type="checkbox" class="schedule-phase-check" id="schedule-phase-test" data-phase="test" checked disabled hidden />
+          </div>
+        </section>
+
+        <section class="schedule-section" id="schedule-section-iteration">
+          <div class="schedule-section-title">迭代信息</div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>迭代</label>
+            <div class="iteration-field">
+              <div class="select-wrap" id="schedule-iteration-wrap">
+                <button type="button" class="field-select" id="schedule-iteration-btn">
+                  <span class="select-text placeholder" id="schedule-iteration-text" data-placeholder="请选择迭代">请选择迭代</span>
+                  <img src="assets/icons/chevron-down.svg" alt="" />
+                </button>
+                <div class="select-menu iteration-menu" id="schedule-iteration-menu" hidden></div>
+                <input type="hidden" id="schedule-iteration" />
+              </div>
+              <button type="button" class="btn-outline iteration-add-btn" id="schedule-iteration-add">新增迭代</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="schedule-section" id="schedule-section-dates">
+          <div class="schedule-section-title">排期时间</div>
+          <p class="field-hint schedule-dates-locked-hint" id="schedule-dates-locked-hint" hidden>当前迭代已有排期，日期不可在此修改</p>
+          <div class="schedule-dates-fields" id="schedule-phase-list">
+            <div class="field-row schedule-date-row" data-phase="prd">
+              <div class="field">
+                <label class="field-label" for="schedule-prd-start">
+                  <span class="req schedule-phase-req" hidden>*</span>PRD 开始时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-prd-start" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="schedule-prd-end">
+                  <span class="req schedule-phase-req" hidden>*</span>PRD 结束时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-prd-end" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+            </div>
+            <div class="field-row schedule-date-row" data-phase="ux">
+              <div class="field">
+                <label class="field-label" for="schedule-ux-start">
+                  <span class="req schedule-phase-req" hidden>*</span>UX 开始时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-ux-start" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="schedule-ux-end">
+                  <span class="req schedule-phase-req" hidden>*</span>UX 结束时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-ux-end" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+            </div>
+            <div class="field-row schedule-date-row" data-phase="ui">
+              <div class="field">
+                <label class="field-label" for="schedule-ui-start">
+                  <span class="req schedule-phase-req" hidden>*</span>UI 开始时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-ui-start" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="schedule-ui-end">
+                  <span class="req schedule-phase-req" hidden>*</span>UI 结束时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-ui-end" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+            </div>
+            <div class="field-row schedule-date-row" data-phase="dev">
+              <div class="field">
+                <label class="field-label" for="schedule-dev-start">
+                  <span class="req">*</span>开发开始时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-dev-start" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="schedule-dev-end">
+                  <span class="req">*</span>开发结束时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-dev-end" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+            </div>
+            <div class="field-row schedule-date-row" data-phase="test">
+              <div class="field">
+                <label class="field-label" for="schedule-test-start">
+                  <span class="req">*</span>测试开始时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-test-start" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="schedule-test-end">
+                  <span class="req">*</span>测试结束时间
+                </label>
+                <div class="date-wrap">
+                  <input class="field-input" id="schedule-test-end" type="date" />
+                  <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-ghost" id="schedule-cancel">取消</button>
+        <button type="button" class="btn-primary btn-submit" id="schedule-confirm">确认排期</button>
+        <button type="button" class="btn-primary btn-submit schedule-remind-footer" id="schedule-remind" hidden>
+          <img src="assets/icons/send.svg" alt="" />
+          提醒排期
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="app-toast" hidden></div>
+
+  <script src="data.js?v=20260723doc1"></script>
+  <script src="app.js?v=20260723av"></script>
+</body>
+</html>

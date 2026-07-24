@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>迭代管理</title>
+  <link rel="stylesheet" href="styles.css?v=20260723bl" />
+</head>
+<body>
+  <div class="page iterations-page">
+    <header class="page-header iterations-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="iteration.html">迭代管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">迭代管理</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>迭代管理</h1>
+          <p>管理产品迭代周期，追踪各阶段进展</p>
+        </div>
+        <div class="quick-filters iterations-toolbar">
+          <div class="search-box">
+            <img src="assets/icons/search.svg" alt="" />
+            <input id="iter-search-input" type="text" placeholder="搜索迭代号..." />
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="iter-product-filter-btn" type="button">
+              <span>所属产品: <b id="iter-product-filter-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="iter-product-dropdown" hidden></div>
+          </div>
+          <div class="filter-btn-wrap">
+            <button class="filter-btn" id="iter-status-filter-btn" type="button">
+              <span>进展状态: <b id="iter-status-filter-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="iter-status-dropdown" hidden></div>
+          </div>
+          <button class="btn-secondary" id="btn-export-iteration" type="button">
+            <img src="assets/icons/upload-cloud.svg" alt="" />
+            <span>导出数据</span>
+          </button>
+          <label class="progress-done-toggle" title="勾选后隐藏已完成的迭代">
+            <input type="checkbox" id="iter-status-done-toggle" />
+            <span>隐藏已完成</span>
+          </label>
+          <button class="btn-primary" id="btn-add-iteration" type="button">
+            <img src="assets/icons/plus.svg" alt="" />
+            <span>新增迭代</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="table-outer iterations-table-outer">
+      <div class="table-wrapper">
+        <table class="iterations-data-table">
+          <thead>
+            <tr class="iterations-table-header">
+              <th class="th-product">所属产品</th>
+              <th class="th-iter">迭代号</th>
+              <th class="th-progress sortable" data-key="progress">进展状态 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-count sortable" data-key="count">需求个数 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="prd">PRD状态 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="ux">交互设计 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="ui">视觉设计 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="dev">开发阶段 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+              <th class="th-phase sortable" data-key="test">测试验收 <img src="assets/icons/arrow-down.svg" alt="" /></th>
+            </tr>
+          </thead>
+          <tbody id="iterations-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="iterations-total-count">共 0 条迭代记录</span>
+      <div class="pagination" id="iterations-pagination"></div>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="iteration-modal" hidden>
+    <div class="modal modal-schedule" role="dialog" aria-modal="true" aria-labelledby="iteration-modal-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="iteration-modal-title">编辑迭代排期</h2>
+        <button class="modal-close schedule-close-btn" id="iteration-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>所属产品</label>
+          <div class="select-wrap" id="iter-product-wrap">
+            <button type="button" class="field-select" id="iter-product-btn">
+              <span class="select-text placeholder" id="iter-product-text" data-placeholder="请选择所属产品">请选择所属产品</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="select-menu" id="iter-product-menu" hidden></div>
+            <input type="hidden" id="iter-product" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>迭代代号</label>
+          <input class="field-input" id="iter-name" type="text" placeholder="如 S26" />
+        </div>
+        <section class="schedule-section">
+          <div class="schedule-section-title">阶段排期</div>
+          <div class="iter-date-grid">
+            <div class="field">
+              <label class="field-label">PRD 开始</label>
+              <input class="field-input" id="iter-prd-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">PRD 结束</label>
+              <input class="field-input" id="iter-prd-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UX 开始</label>
+              <input class="field-input" id="iter-ux-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UX 结束</label>
+              <input class="field-input" id="iter-ux-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UI 开始</label>
+              <input class="field-input" id="iter-ui-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UI 结束</label>
+              <input class="field-input" id="iter-ui-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>开发开始</label>
+              <input class="field-input" id="iter-dev-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>开发结束</label>
+              <input class="field-input" id="iter-dev-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>测试开始</label>
+              <input class="field-input" id="iter-test-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>测试结束</label>
+              <input class="field-input" id="iter-test-end" type="date" />
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-secondary" id="iteration-modal-cancel">取消</button>
+        <button type="button" class="btn-primary" id="iteration-modal-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260723doc1"></script>
+  <script src="iterations.js?v=20260723az"></script>
+</body>
+</html>

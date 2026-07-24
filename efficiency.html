@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 提效看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260723ae" />
+</head>
+<body>
+  <div class="page efficiency-page">
+    <header class="page-header efficiency-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="requirements.html">需求管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">AI 提效看板</span>
+      </nav>
+
+      <div class="title-left">
+        <h1>AI 提效看板</h1>
+        <p>仅展示包含 AI PRD / AI Demo 链接 / AI 埋点链接的需求，聚合 AI 需求专项追踪管理</p>
+      </div>
+    </header>
+
+    <div class="efficiency-toolbar">
+      <div class="efficiency-toolbar-left">
+        <div class="search-box">
+          <img src="assets/icons/search.svg" alt="" />
+          <input id="eff-search-input" type="text" placeholder="搜索需求名称..." />
+        </div>
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="eff-product-filter-btn" type="button">
+            <img src="assets/icons/filter.svg" alt="" />
+            <span>所属产品: <b id="eff-product-filter-value">全部</b></span>
+          </button>
+          <div class="dropdown" id="eff-product-dropdown" hidden></div>
+        </div>
+      </div>
+      <div class="efficiency-toolbar-right">
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="eff-month-filter-btn" type="button">
+            <span>目标交付月: <b id="eff-month-filter-value">全部</b></span>
+            <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+          </button>
+          <div class="dropdown" id="eff-month-dropdown" hidden></div>
+        </div>
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="eff-iteration-filter-btn" type="button">
+            <span>迭代版本: <b id="eff-iteration-filter-value">全部</b></span>
+            <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+          </button>
+          <div class="dropdown" id="eff-iteration-dropdown" hidden></div>
+        </div>
+        <a class="btn-primary" id="eff-progress-btn" href="progress.html">查看提效进展</a>
+      </div>
+    </div>
+
+    <main class="table-outer efficiency-table-outer">
+      <div class="table-wrapper">
+        <div class="table-header efficiency-table-header">
+          <div class="th th-title">需求名称</div>
+          <div class="th w-80 sortable" data-key="product">所属产品 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-100 sortable" data-key="status">进展状态 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-110 sortable" data-key="deliverMonth">目标交付月 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-90 sortable" data-key="iteration">迭代代号 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-160">AI PRD</div>
+          <div class="th w-180">研发对AI PRD的反馈</div>
+          <div class="th w-160">AI Demo链接</div>
+          <div class="th w-110 sortable" data-key="aiDemoDuration">Demo时长估计 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+          <div class="th w-160">AI埋点链接</div>
+        </div>
+        <div class="table-body" id="efficiency-tbody"></div>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="efficiency-total-count">共 0 条需求</span>
+      <div class="pagination" id="efficiency-pagination"></div>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="eff-progress-modal" hidden>
+    <div class="modal eff-progress-modal" role="dialog" aria-modal="true" aria-labelledby="eff-progress-title">
+      <div class="modal-header">
+        <h2 id="eff-progress-title">提效进展</h2>
+        <button class="modal-close" id="eff-progress-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body eff-progress-body">
+        <p class="eff-progress-scope" id="eff-progress-scope">基于当前筛选结果统计</p>
+        <div class="eff-progress-grid" id="eff-progress-grid"></div>
+        <div class="eff-progress-section">
+          <h3>按迭代分布</h3>
+          <div class="eff-progress-bars" id="eff-progress-bars"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="eff-progress-ok">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="eff-feedback-modal" hidden>
+    <div class="modal eff-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="eff-feedback-title">
+      <div class="modal-header">
+        <h2 id="eff-feedback-title">研发对AI PRD的反馈</h2>
+        <button class="modal-close" id="eff-feedback-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="eff-feedback-req-title"></strong>
+      </div>
+      <div class="modal-body eff-feedback-body" id="eff-feedback-list"></div>
+      <div class="eff-feedback-compose" id="eff-feedback-compose" hidden>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">角色</label>
+            <select class="field-input" id="eff-feedback-role">
+              <option value="后端研发">后端研发</option>
+              <option value="前端研发">前端研发</option>
+              <option value="测试开发">测试开发</option>
+              <option value="产品">产品</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">姓名</label>
+            <input class="field-input" id="eff-feedback-name" type="text" placeholder="请输入姓名" value="张伟" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">反馈内容</label>
+          <textarea class="field-textarea" id="eff-feedback-content" rows="4" placeholder="请输入对 AI PRD 的反馈..."></textarea>
+        </div>
+        <div class="eff-feedback-compose-actions">
+          <button type="button" class="btn-secondary" id="eff-feedback-compose-cancel">取消</button>
+          <button type="button" class="btn-primary" id="eff-feedback-compose-submit">提交反馈</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="eff-feedback-ok">关闭</button>
+        <button type="button" class="btn-primary" id="eff-feedback-add" disabled title="暂不支持添加反馈">
+          <img src="assets/icons/plus.svg" alt="" />
+          <span>添加反馈</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260720k"></script>
+  <script src="efficiency.js?v=20260720e"></script>
+</body>
+</html>

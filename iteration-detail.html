@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>迭代详情</title>
+  <link rel="stylesheet" href="styles.css?v=20260724di1" />
+</head>
+<body>
+  <div class="page iteration-detail-page is-drawer-collapsed">
+    <aside class="iter-drawer" id="iter-drawer" aria-label="迭代抽屉">
+      <div class="iter-drawer-header">
+        <div class="iter-drawer-product-wrap" id="drawer-product-wrap">
+          <button type="button" class="iter-drawer-brand" id="drawer-product-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="iter-drawer-product-icon" id="drawer-product-icon">—</span>
+            <span class="iter-drawer-product-name" id="drawer-product-name">—</span>
+            <img class="iter-drawer-product-caret" src="assets/icons/drawer-chevron-down.svg" alt="" />
+          </button>
+          <div class="iter-drawer-product-menu" id="drawer-product-menu" hidden role="listbox"></div>
+        </div>
+        <button type="button" class="iter-drawer-collapse-btn" id="drawer-collapse-btn" aria-label="收起抽屉">
+          <img src="assets/icons/chevron-left.svg" alt="" />
+        </button>
+      </div>
+      <div class="iter-drawer-section-title">全部迭代</div>
+      <div class="iter-drawer-list" id="drawer-iter-list"></div>
+      <div class="iter-drawer-footer">
+        <button type="button" class="iter-drawer-create-btn" id="drawer-create-btn">
+          <img src="assets/icons/plus-muted.svg" alt="" />
+          <span>新建迭代</span>
+        </button>
+      </div>
+    </aside>
+    <button type="button" class="iter-drawer-expand-btn" id="drawer-expand-btn" aria-label="展开抽屉">
+      <img src="assets/icons/chevron-right.svg" alt="" />
+    </button>
+
+    <div class="iter-detail-body">
+    <div class="iteration-detail-topnav">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="iteration.html">迭代管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="iterations.html">迭代管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current" id="detail-breadcrumb-name">—</span>
+      </nav>
+    </div>
+
+    <header class="iteration-detail-header">
+      <div class="iteration-detail-title-row">
+        <div class="iteration-detail-title-left">
+          <h1 id="detail-iter-name">—</h1>
+          <span class="iter-detail-status-badge" id="detail-status-badge">—</span>
+          <div class="iteration-detail-meta-tags" id="detail-meta-tags"></div>
+        </div>
+        <div class="iteration-detail-date-range">
+          <img src="assets/icons/calendar.svg" alt="" />
+          <span id="detail-date-range">—</span>
+        </div>
+      </div>
+
+      <nav class="iteration-detail-tabs" role="tablist">
+        <button type="button" class="iter-detail-tab active" data-tab="overview" role="tab" aria-selected="true">概览</button>
+        <button type="button" class="iter-detail-tab" data-tab="changelog" role="tab" aria-selected="false">变更记录</button>
+      </nav>
+    </header>
+
+    <main class="iteration-detail-main" id="detail-main">
+      <div class="iter-detail-tab-panel" id="panel-overview" data-panel="overview">
+      <section class="iter-detail-card" id="panel-overview-reqs">
+        <div class="iter-detail-card-header">
+          <div class="iter-detail-card-title-group">
+            <img class="iter-detail-card-icon" src="assets/icons/icon-requirements.svg" alt="" />
+            <h2 class="iter-detail-card-title">所属需求</h2>
+          </div>
+          <button type="button" class="btn-primary iter-detail-add-req-btn" id="btn-add-req">+ 添加需求</button>
+        </div>
+        <div class="iter-detail-reqs-table-wrap">
+          <table class="iter-detail-reqs-table">
+            <thead>
+              <tr>
+                <th class="col-name">需求名称</th>
+                <th class="col-code">需求编号</th>
+                <th class="col-value">价值点</th>
+                <th class="col-type">落地类型</th>
+                <th class="col-shelf">上架</th>
+                <th class="col-prd">PRD</th>
+                <th class="col-ai">AI PRD</th>
+                <th class="col-ux">UX链接</th>
+                <th class="col-ui">UI链接</th>
+                <th class="col-ops">操作</th>
+              </tr>
+            </thead>
+            <tbody id="detail-req-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="iter-detail-card">
+        <div class="iter-detail-card-header">
+          <div class="iter-detail-card-title-group">
+            <img class="iter-detail-card-icon" src="assets/icons/calendar.svg" alt="" />
+            <h2 class="iter-detail-card-title">各阶段排期时间</h2>
+          </div>
+          <button type="button" class="iter-detail-icon-btn" id="btn-edit-schedule" aria-label="编辑排期">
+            <img src="assets/icons/pencil.svg" alt="" />
+          </button>
+        </div>
+        <div class="iter-detail-phases-timeline" id="detail-phases-timeline"></div>
+      </section>
+
+      <div class="iter-detail-two-col">
+        <section class="iter-detail-card iter-detail-side-card">
+          <div class="iter-detail-card-header">
+            <div class="iter-detail-card-title-group">
+              <img class="iter-detail-card-icon" src="assets/icons/settings.svg" alt="" />
+              <h2 class="iter-detail-card-title">开发信息</h2>
+            </div>
+            <button type="button" class="iter-detail-remind-btn">
+              <img src="assets/icons/bell-outline.svg" alt="" />
+              <span>提醒</span>
+            </button>
+          </div>
+          <div class="iter-detail-inner-table-wrap">
+            <table class="iter-detail-inner-table">
+              <thead>
+                <tr>
+                  <th class="col-dev-ver">提测版本</th>
+                  <th class="col-dev-link">提测链接</th>
+                  <th class="col-dev-note">提测建议</th>
+                  <th class="col-dev-time">提测时间</th>
+                  <th class="col-dev-owner">提测人</th>
+                </tr>
+              </thead>
+              <tbody id="detail-dev-tbody"></tbody>
+            </table>
+          </div>
+          <div class="iter-detail-more-slot">
+            <button type="button" class="iter-detail-more-link" id="detail-dev-more-btn" hidden>查看更多 &gt;</button>
+          </div>
+        </section>
+
+        <section class="iter-detail-card iter-detail-side-card">
+          <div class="iter-detail-card-header">
+            <div class="iter-detail-card-title-group">
+              <img class="iter-detail-card-icon" src="assets/icons/check-circle-title.svg" alt="" />
+              <h2 class="iter-detail-card-title">测试信息</h2>
+            </div>
+            <button type="button" class="iter-detail-remind-btn">
+              <img src="assets/icons/bell-outline.svg" alt="" />
+              <span>提醒</span>
+            </button>
+          </div>
+          <div class="iter-detail-inner-table-wrap">
+            <table class="iter-detail-inner-table">
+              <thead>
+                <tr>
+                  <th class="col-test-ver">测试版本</th>
+                  <th class="col-test-result">测试结论</th>
+                  <th class="col-test-report">测试报告</th>
+                  <th class="col-test-note">测试备注</th>
+                </tr>
+              </thead>
+              <tbody id="detail-test-tbody"></tbody>
+            </table>
+          </div>
+          <div class="iter-detail-more-slot">
+            <button type="button" class="iter-detail-more-link" id="detail-test-more-btn" hidden>查看更多 &gt;</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="iter-detail-card iter-detail-apk-card">
+        <div class="iter-detail-card-header">
+          <div class="iter-detail-card-title-group">
+            <img class="iter-detail-card-icon" src="assets/icons/package.svg" alt="" />
+            <h2 class="iter-detail-card-title">APK与迭代信息</h2>
+          </div>
+          <button type="button" class="iter-detail-remind-btn">
+            <img src="assets/icons/bell-outline.svg" alt="" />
+            <span>提醒</span>
+          </button>
+        </div>
+        <div class="iter-detail-apk-grid" id="detail-apk-grid"></div>
+      </section>
+      </div>
+
+      <div class="iter-detail-tab-panel" id="panel-changelog" data-panel="changelog" hidden>
+        <section class="iter-detail-card iter-changelog-card">
+          <div class="iter-detail-card-header iter-changelog-card-header">
+            <div class="iter-detail-card-title-group">
+              <img class="iter-detail-card-icon" src="assets/icons/file-text-changelog.svg" alt="" />
+              <h2 class="iter-detail-card-title">需求变更记录</h2>
+            </div>
+            <div class="select-wrap iter-changelog-filter" id="changelog-type-filter-wrap">
+              <button type="button" class="iter-changelog-filter-btn" id="changelog-type-filter-btn" aria-haspopup="listbox" aria-expanded="false">
+                <span id="changelog-type-filter-text">全部类型</span>
+                <img src="assets/icons/chevron-down.svg" alt="" width="12" height="12" />
+              </button>
+              <div class="select-menu iter-changelog-filter-menu" id="changelog-type-filter-menu" hidden>
+                <button type="button" data-value="all" class="selected">全部类型</button>
+                <button type="button" data-value="add">新增</button>
+                <button type="button" data-value="transfer">转移</button>
+                <button type="button" data-value="delete">删除</button>
+              </div>
+              <input type="hidden" id="changelog-type-filter" value="all" />
+            </div>
+          </div>
+          <div class="iter-changelog-timeline" id="detail-changelog-timeline"></div>
+        </section>
+
+        <section class="iter-detail-card iter-changelog-card">
+          <div class="iter-detail-card-header iter-changelog-card-header">
+            <div class="iter-detail-card-title-group">
+              <img class="iter-detail-card-icon" src="assets/icons/calendar.svg" alt="" />
+              <h2 class="iter-detail-card-title">迭代排期变更记录</h2>
+            </div>
+          </div>
+          <div class="iter-changelog-timeline" id="detail-schedule-changelog-timeline"></div>
+        </section>
+
+        <section class="iter-detail-card iter-changelog-card">
+          <div class="iter-detail-card-header iter-changelog-card-header">
+            <div class="iter-detail-card-title-group">
+              <img class="iter-detail-card-icon" src="assets/icons/alert-triangle.svg" alt="" />
+              <h2 class="iter-detail-card-title">超期记录</h2>
+            </div>
+            <span class="iter-overdue-count-badge" id="detail-overdue-count" hidden>共 0 项超期</span>
+          </div>
+          <div class="iter-overdue-table-wrap" id="detail-overdue-table-wrap">
+            <table class="iter-overdue-table">
+              <thead>
+                <tr>
+                  <th class="col-ov-item">超期项</th>
+                  <th class="col-ov-plan">计划时间</th>
+                  <th class="col-ov-actual">实际时间</th>
+                  <th class="col-ov-days">超期天数</th>
+                </tr>
+              </thead>
+              <tbody id="detail-overdue-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-req-modal-overlay" id="edit-schedule-modal" hidden>
+    <div class="modal modal-edit-schedule" role="dialog" aria-modal="true" aria-labelledby="edit-schedule-modal-title">
+      <div class="modal-header edit-schedule-modal-header">
+        <h2 id="edit-schedule-modal-title">编辑排期时间</h2>
+        <div class="edit-schedule-header-actions">
+          <span class="edit-schedule-iter-badge" id="edit-schedule-iter-badge">当前迭代：—</span>
+          <button class="modal-close edit-schedule-close-btn" id="edit-schedule-modal-close" type="button" aria-label="关闭">
+            <img src="assets/icons/modal-close-x.svg" alt="" />
+          </button>
+        </div>
+      </div>
+      <div class="modal-body edit-schedule-modal-body">
+        <div class="edit-schedule-phases">
+          <div class="edit-schedule-phase-row">
+            <div class="edit-schedule-phase-label">
+              <span>PRD</span>
+              <span class="edit-schedule-optional">选填</span>
+            </div>
+            <div class="edit-schedule-inputs">
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-prd-start" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+              <span class="edit-schedule-tilde">~</span>
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-prd-end" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+            </div>
+          </div>
+          <div class="edit-schedule-phase-row">
+            <div class="edit-schedule-phase-label">
+              <span>UX</span>
+              <span class="edit-schedule-optional">选填</span>
+            </div>
+            <div class="edit-schedule-inputs">
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-ux-start" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+              <span class="edit-schedule-tilde">~</span>
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-ux-end" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+            </div>
+          </div>
+          <div class="edit-schedule-phase-row">
+            <div class="edit-schedule-phase-label">
+              <span>UI</span>
+              <span class="edit-schedule-optional">选填</span>
+            </div>
+            <div class="edit-schedule-inputs">
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-ui-start" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+              <span class="edit-schedule-tilde">~</span>
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-ui-end" type="date" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+            </div>
+          </div>
+          <div class="edit-schedule-phase-row">
+            <div class="edit-schedule-phase-label">
+              <span>开发</span>
+              <span class="edit-schedule-req">*</span>
+            </div>
+            <div class="edit-schedule-inputs">
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-dev-start" type="date" data-required="true" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+              <span class="edit-schedule-tilde">~</span>
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-dev-end" type="date" data-required="true" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+            </div>
+          </div>
+          <div class="edit-schedule-phase-row">
+            <div class="edit-schedule-phase-label">
+              <span>测试</span>
+              <span class="edit-schedule-req">*</span>
+            </div>
+            <div class="edit-schedule-inputs">
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-test-start" type="date" data-required="true" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+              <span class="edit-schedule-tilde">~</span>
+              <label class="edit-schedule-date-wrap">
+                <input class="edit-schedule-date" id="edit-sched-test-end" type="date" data-required="true" />
+                <img class="edit-schedule-date-icon" src="assets/icons/schedule-edit-calendar.svg" alt="" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="edit-schedule-reason-field">
+          <label class="edit-schedule-reason-label" for="edit-sched-reason">
+            修改原因<span class="edit-schedule-req">*</span>
+          </label>
+          <input
+            class="edit-schedule-reason"
+            id="edit-sched-reason"
+            type="text"
+            placeholder="请输入排期修改原因..."
+          />
+        </div>
+      </div>
+      <div class="modal-footer edit-schedule-modal-footer">
+        <button type="button" class="btn-secondary" id="edit-schedule-modal-cancel">取消</button>
+        <button type="button" class="btn-edit-schedule-confirm" id="edit-schedule-modal-confirm">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="iteration-modal" hidden>
+    <div class="modal modal-schedule" role="dialog" aria-modal="true" aria-labelledby="iteration-modal-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="iteration-modal-title">新建迭代</h2>
+        <button class="modal-close schedule-close-btn" id="iteration-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>所属产品</label>
+          <div class="select-wrap" id="iter-product-wrap">
+            <button type="button" class="field-select" id="iter-product-btn">
+              <span class="select-text placeholder" id="iter-product-text" data-placeholder="请选择所属产品">请选择所属产品</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="select-menu" id="iter-product-menu" hidden></div>
+            <input type="hidden" id="iter-product" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>迭代代号</label>
+          <input class="field-input" id="iter-name" type="text" placeholder="如 S26" />
+        </div>
+        <section class="schedule-section">
+          <div class="schedule-section-title">阶段排期</div>
+          <div class="iter-date-grid">
+            <div class="field">
+              <label class="field-label">PRD 开始</label>
+              <input class="field-input" id="iter-prd-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">PRD 结束</label>
+              <input class="field-input" id="iter-prd-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UX 开始</label>
+              <input class="field-input" id="iter-ux-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UX 结束</label>
+              <input class="field-input" id="iter-ux-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UI 开始</label>
+              <input class="field-input" id="iter-ui-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label">UI 结束</label>
+              <input class="field-input" id="iter-ui-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>开发开始</label>
+              <input class="field-input" id="iter-dev-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>开发结束</label>
+              <input class="field-input" id="iter-dev-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>测试开始</label>
+              <input class="field-input" id="iter-test-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="req">*</span>测试结束</label>
+              <input class="field-input" id="iter-test-end" type="date" />
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-secondary" id="iteration-modal-cancel">取消</button>
+        <button type="button" class="btn-primary" id="iteration-modal-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-req-modal-overlay" id="add-req-modal" hidden>
+    <div class="modal modal-add-req" role="dialog" aria-modal="true" aria-labelledby="add-req-modal-title">
+      <div class="modal-header add-req-modal-header">
+        <h2 id="add-req-modal-title">添加需求</h2>
+        <button class="modal-close add-req-close-btn" id="add-req-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/modal-close-x.svg" alt="" />
+        </button>
+      </div>
+      <div class="add-req-search-area">
+        <div class="add-req-search-input">
+          <img src="assets/icons/add-req-search.svg" alt="" />
+          <input type="search" id="add-req-search" placeholder="搜索需求编号或名称..." autocomplete="off" />
+        </div>
+      </div>
+      <div class="add-req-tree" id="add-req-tree"></div>
+      <div class="modal-footer add-req-modal-footer">
+        <div class="add-req-counter">
+          <span>已选择</span>
+          <strong id="add-req-selected-count">0</strong>
+          <span>个需求</span>
+        </div>
+        <div class="add-req-footer-actions">
+          <button type="button" class="btn-secondary" id="add-req-modal-cancel">取消</button>
+          <button type="button" class="btn-add-req-confirm" id="add-req-modal-confirm">确认添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-req-modal-overlay" id="delete-req-modal" hidden>
+    <div class="modal modal-delete-req" role="dialog" aria-modal="true" aria-labelledby="delete-req-modal-title">
+      <div class="modal-header delete-req-modal-header">
+        <h2 id="delete-req-modal-title">删除需求</h2>
+        <button class="modal-close delete-req-close-btn" id="delete-req-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/modal-close-x.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body delete-req-modal-body">
+        <div class="delete-req-warning">
+          <img class="delete-req-warning-icon" src="assets/icons/alert-triangle.svg" alt="" />
+          <p>确定要从当前迭代中删除该需求吗？此操作会将需求完全移除。</p>
+        </div>
+        <div class="field">
+          <label class="field-label delete-req-reason-label" for="delete-req-reason">
+            删除原因<span class="req">*</span>
+          </label>
+          <textarea
+            class="field-textarea delete-req-reason"
+            id="delete-req-reason"
+            rows="4"
+            placeholder="请填写删除原因..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer delete-req-modal-footer">
+        <button type="button" class="btn-secondary" id="delete-req-modal-cancel">取消</button>
+        <button type="button" class="btn-delete-confirm" id="delete-req-modal-confirm">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-req-modal-overlay" id="transfer-req-modal" hidden>
+    <div class="modal modal-transfer-req" role="dialog" aria-modal="true" aria-labelledby="transfer-req-modal-title">
+      <div class="modal-header transfer-req-modal-header">
+        <h2 id="transfer-req-modal-title">转移需求</h2>
+        <button class="modal-close transfer-req-close-btn" id="transfer-req-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/modal-close-x.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body transfer-req-modal-body">
+        <div class="transfer-req-info">
+          <img class="transfer-req-info-icon" src="assets/icons/info-transfer.svg" alt="" />
+          <p>转移后，该需求的所有相关关联子任务、测试用例将被同步归档并平移到选定的目标迭代。</p>
+        </div>
+        <div class="field">
+          <label class="field-label transfer-req-field-label" for="transfer-req-iteration-btn">
+            目标迭代<span class="req">*</span>
+          </label>
+          <div class="select-wrap" id="transfer-req-iteration-wrap">
+            <button type="button" class="field-select transfer-req-select" id="transfer-req-iteration-btn">
+              <span class="select-text placeholder" id="transfer-req-iteration-text" data-placeholder="请选择目标迭代">请选择目标迭代</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="select-menu" id="transfer-req-iteration-menu" hidden></div>
+            <input type="hidden" id="transfer-req-iteration" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label transfer-req-field-label" for="transfer-req-reason">
+            转移原因<span class="req">*</span>
+          </label>
+          <textarea
+            class="field-textarea transfer-req-reason"
+            id="transfer-req-reason"
+            rows="4"
+            placeholder="请填写转移原因..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer transfer-req-modal-footer">
+        <button type="button" class="btn-secondary" id="transfer-req-modal-cancel">取消</button>
+        <button type="button" class="btn-transfer-confirm" id="transfer-req-modal-confirm">确认转移</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-req-modal-overlay" id="remind-req-modal" hidden>
+    <div class="modal modal-remind-req" role="dialog" aria-modal="true" aria-labelledby="remind-req-modal-title">
+      <div class="modal-header remind-req-modal-header">
+        <h2 id="remind-req-modal-title">发起提醒</h2>
+        <button class="modal-close remind-req-close-btn" id="remind-req-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/modal-close-x.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body remind-req-modal-body">
+        <p class="remind-req-subtitle">选择需要提醒的角色</p>
+        <div class="remind-req-options">
+          <label class="remind-req-row remind-req-select-all">
+            <input type="checkbox" id="remind-req-select-all" />
+            <span class="remind-req-box" aria-hidden="true">
+              <img class="remind-req-box-check" src="assets/icons/remind-check.svg" alt="" />
+              <img class="remind-req-box-indeterminate" src="assets/icons/remind-indeterminate.svg" alt="" />
+            </span>
+            <span class="remind-req-label is-strong">全选</span>
+          </label>
+          <div class="remind-req-divider"></div>
+          <div class="remind-req-role-list">
+            <label class="remind-req-row">
+              <input type="checkbox" class="remind-req-role" name="remind-role" value="ui" checked />
+              <span class="remind-req-box" aria-hidden="true">
+                <img class="remind-req-box-check" src="assets/icons/remind-check.svg" alt="" />
+              </span>
+              <span class="remind-req-role-content">
+                <img src="assets/icons/remind-role-ui.svg" alt="" />
+                <span>UI设计</span>
+              </span>
+            </label>
+            <label class="remind-req-row">
+              <input type="checkbox" class="remind-req-role" name="remind-role" value="ux" checked />
+              <span class="remind-req-box" aria-hidden="true">
+                <img class="remind-req-box-check" src="assets/icons/remind-check.svg" alt="" />
+              </span>
+              <span class="remind-req-role-content">
+                <img src="assets/icons/remind-role-ux.svg" alt="" />
+                <span>UX设计</span>
+              </span>
+            </label>
+            <label class="remind-req-row">
+              <input type="checkbox" class="remind-req-role" name="remind-role" value="product" checked />
+              <span class="remind-req-box" aria-hidden="true">
+                <img class="remind-req-box-check" src="assets/icons/remind-check.svg" alt="" />
+              </span>
+              <span class="remind-req-role-content">
+                <img src="assets/icons/remind-role-product.svg" alt="" />
+                <span>产品</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer remind-req-modal-footer">
+        <button type="button" class="btn-secondary" id="remind-req-modal-cancel">取消</button>
+        <button type="button" class="btn-remind-confirm" id="remind-req-modal-confirm">确认提醒</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay iter-info-more-overlay" id="info-more-modal" hidden>
+    <div class="modal modal-info-more" role="dialog" aria-modal="true" aria-labelledby="info-more-modal-title">
+      <div class="info-more-header">
+        <div class="info-more-title-block">
+          <div class="info-more-icon-wrap">
+            <img class="info-more-icon" id="info-more-icon" src="assets/icons/settings.svg" alt="" />
+          </div>
+          <h2 class="info-more-title" id="info-more-modal-title">开发信息</h2>
+          <span class="info-more-status-badge" id="info-more-status-badge">已提测</span>
+        </div>
+        <button type="button" class="info-more-close" id="info-more-modal-close" aria-label="关闭">
+          <img src="assets/icons/modal-close-x.svg" alt="" />
+        </button>
+      </div>
+      <div class="info-more-body">
+        <div class="info-more-table-card">
+          <div class="info-more-table-head" id="info-more-table-head"></div>
+          <div class="info-more-table-rows" id="info-more-table-rows"></div>
+          <div class="info-more-pagination">
+            <span class="info-more-total" id="info-more-total">共 0 条记录</span>
+            <div class="info-more-pages" id="info-more-pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260723sch1"></script>
+  <script src="iteration-detail.js?v=20260724di1"></script>
+</body>
+</html>

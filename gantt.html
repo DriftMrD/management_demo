@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>甘特图看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260723aw" />
+</head>
+<body>
+  <div class="page gantt-page">
+    <header class="page-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="iteration.html">迭代管理系统</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">甘特图看板</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>甘特图看板</h1>
+          <p>按产品、迭代查看需求各阶段排期，时间轴按日展示</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="gantt-toolbar">
+      <div class="gantt-toolbar-left">
+        <div class="search-box">
+          <img src="assets/icons/search.svg" alt="" />
+          <input id="gantt-search-input" type="text" placeholder="搜索需求名称..." />
+        </div>
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="gantt-product-filter-btn" type="button">
+            <img src="assets/icons/filter.svg" alt="" />
+            <span>所属产品: <b id="gantt-product-filter-value">全部</b></span>
+          </button>
+          <div class="dropdown" id="gantt-product-dropdown" hidden></div>
+        </div>
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="gantt-iteration-filter-btn" type="button">
+            <span>迭代: <b id="gantt-iteration-filter-value">全部</b></span>
+            <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+          </button>
+          <div class="dropdown" id="gantt-iteration-dropdown" hidden></div>
+        </div>
+      </div>
+      <div class="gantt-toolbar-right">
+        <div class="gantt-legend" aria-label="阶段图例">
+          <span class="gantt-legend-item"><i class="gantt-swatch phase-prd"></i>PRD</span>
+          <span class="gantt-legend-item"><i class="gantt-swatch phase-ux"></i>UX</span>
+          <span class="gantt-legend-item"><i class="gantt-swatch phase-ui"></i>UI</span>
+          <span class="gantt-legend-item"><i class="gantt-swatch phase-dev"></i>开发</span>
+          <span class="gantt-legend-item"><i class="gantt-swatch phase-test"></i>测试</span>
+          <button type="button" class="gantt-legend-item gantt-today-jump" id="gantt-today-btn" title="跳转到今天">
+            <i class="gantt-today-swatch"></i>今日
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main class="gantt-board" id="gantt-board">
+      <div class="gantt-left">
+        <div class="gantt-left-header">
+          <div class="gantt-col-product">产品</div>
+          <div class="gantt-col-iter">迭代</div>
+          <div class="gantt-col-req">需求</div>
+          <div class="gantt-col-phase">阶段</div>
+        </div>
+        <div class="gantt-left-body" id="gantt-left-body"></div>
+      </div>
+      <div class="gantt-right" id="gantt-right">
+        <div class="gantt-timeline-header" id="gantt-timeline-header"></div>
+        <div class="gantt-timeline-body" id="gantt-timeline-body"></div>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="gantt-total-count">共 0 条排期需求</span>
+    </footer>
+  </div>
+
+  <script src="data.js?v=20260721f"></script>
+  <script src="gantt.js?v=20260720at"></script>
+</body>
+</html>

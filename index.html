@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>项目管理</title>
+  <link rel="stylesheet" href="styles.css?v=20260720ag" />
+</head>
+<body>
+  <div class="home-shell home-shell-flat">
+    <div class="home-main-panel">
+      <header class="home-main-header">
+        <nav class="breadcrumb home-breadcrumb">
+          <span class="crumb current">项目管理</span>
+        </nav>
+        <div class="home-intro">
+          <h1>项目管理</h1>
+          <p>统一入口管理需求与迭代，覆盖需求全生命周期与迭代排期可视化</p>
+        </div>
+      </header>
+
+      <main class="home-main-body">
+        <h2 class="home-section-label">系统功能模块</h2>
+        <section class="home-module-row" aria-label="功能模块">
+          <a class="home-module-card" href="requirements.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/layout-dashboard.svg" alt="" />
+                <h3>需求管理系统</h3>
+              </div>
+              <p>跨产品线需求全生命周期管理，覆盖需求池、AI 提效与周进展</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="req-system-badge">0条需求</span>
+              <span class="home-module-enter">进入系统 &gt;</span>
+            </div>
+          </a>
+
+          <a class="home-module-card" href="iteration.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/calendar.svg" alt="" />
+                <h3>迭代管理系统</h3>
+              </div>
+              <p>跨产品线迭代节奏与排期可视化，覆盖迭代管理与甘特排期</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="iter-system-badge">0个迭代</span>
+              <span class="home-module-enter">进入系统 &gt;</span>
+            </div>
+          </a>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260720ag"></script>
+  <script>
+    document.getElementById("req-system-badge").textContent = `${getPoolRows().length}条需求`;
+    document.getElementById("iter-system-badge").textContent = `${ITERATIONS.length}个迭代`;
+  </script>
+</body>
+</html>
