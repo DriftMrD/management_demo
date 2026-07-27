@@ -42,21 +42,31 @@ function isDrawerCurrentlyOpen() {
   return !!(page && !page.classList.contains("is-drawer-collapsed"));
 }
 
-function setupDrawerToggle(collapsed) {
-  const page = document.querySelector(".rd-detail-page");
-  if (!page) return;
-  page.classList.toggle("is-drawer-collapsed", !!collapsed);
-  syncDrawerQuery(!collapsed);
+function setDrawerOpenStored(open) {
   try {
-    if (collapsed) sessionStorage.removeItem(DRAWER_STORAGE_KEY);
-    else sessionStorage.setItem(DRAWER_STORAGE_KEY, "1");
+    if (open) sessionStorage.setItem(DRAWER_STORAGE_KEY, "1");
+    else sessionStorage.removeItem(DRAWER_STORAGE_KEY);
   } catch {
     /* ignore */
   }
 }
 
+function setupDrawerToggle(collapsed) {
+  const page = document.querySelector(".rd-detail-page");
+  const expandBtn = document.getElementById("drawer-expand-btn");
+  if (!page) return;
+  page.classList.toggle("is-drawer-collapsed", !!collapsed);
+  if (expandBtn) expandBtn.hidden = !collapsed;
+  setDrawerOpenStored(!collapsed);
+  syncDrawerQuery(!collapsed);
+  closeDrawerProductMenu();
+  // 展开/收起后重绘链接，切换迭代时保留 drawer=open
+  if (pageState.product) renderDrawer(pageState.product, pageState.name);
+}
+
 function statusBadgeClass(status) {
   if (status === "已完成") return "is-done";
+  if (status === "超期完成") return "is-done-late";
   if (status === "进行中") return "is-running";
   if (status === "已超期") return "is-overdue";
   if (status === "部分完成") return "is-partial";
@@ -79,7 +89,8 @@ function linkOrDash(url, { underline = false } = {}) {
   const val = url && String(url).trim();
   if (!val) return `<span class="iter-detail-cell-muted">-</span>`;
   const cls = underline ? "iter-detail-cell-link is-underline" : "iter-detail-cell-link";
-  return `<a class="${cls}" href="${escapeHtml(val)}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`;
+  const safe = escapeHtml(val);
+  return `<a class="${cls}" href="${safe}" title="${safe}" target="_blank" rel="noopener">${safe}</a>`;
 }
 
 function renderValueCell(isValue) {
@@ -136,6 +147,14 @@ function getAiPrdFeedbackText(row) {
   return "";
 }
 
+function isReqSubmittedForTest(row) {
+  if (!row) return false;
+  return !!(
+    (row.testBuildUrl && String(row.testBuildUrl).trim()) ||
+    (row.testSubmitVersion && String(row.testSubmitVersion).trim())
+  );
+}
+
 function renderReqRow(row, striped) {
   const design =
     typeof resolveUxUiForDisplay === "function"
@@ -143,12 +162,16 @@ function renderReqRow(row, striped) {
       : { needUx: row.needUx !== false, needUi: row.needUi !== false, uxUrl: row.uxUrl || "", uiUrl: row.uiUrl || "" };
   const uxUrl = design.needUx === false ? "" : design.uxUrl || "";
   const uiUrl = design.needUi === false ? "" : design.uiUrl || "";
+  const submitted = isReqSubmittedForTest(row);
+  const submitBtn = submitted
+    ? `<button type="button" class="rd-req-submit-btn is-disabled" disabled title="已转测">已转测</button>`
+    : `<button type="button" class="rd-req-submit-btn" data-action="submit-test" data-id="${row.id}">转测</button>`;
 
   return `
     <tr class="${striped ? "is-striped" : ""}">
       ${renderReqNameCell(row, "col-name")}
       <td class="col-value">${renderValueCell(!!row.isValue)}</td>
-      <td class="col-priority">${escapeHtml(row.priority || "-")}</td>
+      <td class="col-priority">${row.priority ? `<span class="priority-badge priority-${escapeHtml(row.priority)}">${escapeHtml(row.priority)}</span>` : '<span class="iter-detail-cell-muted">-</span>'}</td>
       <td class="col-type"><span class="iter-detail-type-badge ${landingTypeClass(row.type)}">${escapeHtml(landingTypeLabel(row.type))}</span></td>
       <td class="col-version">${escapeHtml(row.version || "-")}</td>
       <td class="col-prd">${renderPrdCell(row)}</td>
@@ -157,6 +180,7 @@ function renderReqRow(row, striped) {
       <td class="col-ai-track">${linkOrDash(row.aiTrackUrl, { underline: true })}</td>
       <td class="col-ux">${uxUrl ? linkOrDash(uxUrl) : '<span class="iter-detail-cell-muted">-</span>'}</td>
       <td class="col-ui">${uiUrl ? linkOrDash(uiUrl) : '<span class="iter-detail-cell-muted">-</span>'}</td>
+      <td class="col-ops">${submitBtn}</td>
     </tr>`;
 }
 
@@ -190,19 +214,55 @@ function getTestRowData(reqs) {
   );
 }
 
+function getReqIterDeadline(r, endKey) {
+  if (!r || !r.iteration || !r.product || typeof findIteration !== "function") return "";
+  const it = findIteration(r.iteration, r.product);
+  return (it && it.dates && it.dates[endKey]) || "";
+}
+
 function getReqDevStatus(r) {
+  const deadline = getReqIterDeadline(r, "devEnd");
+  const pastDeadline = !!(deadline && todayISO() > deadline);
+  const done =
+    !!(r && r.testBuildUrl && String(r.testBuildUrl).trim()) ||
+    (r && r.devPhaseStatus === "已完成");
+  if (done) return pastDeadline ? "超期完成" : "已完成"; // 展示文案仍为「已完成」，红底表示超期
+  // 未完成且已过开发截止日 → 已超期（进行中也算超期）
+  if (pastDeadline) return "已超期";
   if (r && r.devPhaseStatus) return normalizeRdWorkStatus(r.devPhaseStatus);
-  if (r && r.testBuildUrl && String(r.testBuildUrl).trim()) return "已完成";
   if (r && (r.status === "开发中" || r.status === "测试中")) return "进行中";
   return "未开始";
 }
 
 function getReqTestStatus(r) {
-  if (r && r.testPhaseStatus) return normalizeRdWorkStatus(r.testPhaseStatus);
-  if (r && ((r.testReportUrl && String(r.testReportUrl).trim()) || (r.testConclusion && String(r.testConclusion).trim()))) {
-    return "已完成";
+  const hasConclusion = r && r.testConclusion && String(r.testConclusion).trim();
+  const hasReport = r && r.testReportUrl && String(r.testReportUrl).trim();
+  const deadline = getReqIterDeadline(r, "testEnd");
+  const pastDeadline = !!(deadline && todayISO() > deadline);
+
+  // 结论 + 报告齐全才算测试完成；过截止日内部记超期完成（展示仍为已完成+红底）
+  if (hasConclusion && hasReport) {
+    return pastDeadline ? "超期完成" : "已完成";
   }
-  if (r && r.status === "测试中") return "进行中";
+
+  const hasTransfer = !!(
+    r &&
+    ((r.testBuildUrl && String(r.testBuildUrl).trim()) ||
+      (r.testSubmitVersion && String(r.testSubmitVersion).trim()))
+  );
+  // 已转测但未出结论/报告 → 测试进行中（过截止日则已超期），不能算已完成
+  if (hasTransfer || (r && r.status === "测试中")) {
+    return pastDeadline ? "已超期" : "进行中";
+  }
+
+  if (r && r.testPhaseStatus) {
+    const normalized = normalizeRdWorkStatus(r.testPhaseStatus);
+    if (normalized === "已完成") return pastDeadline ? "已超期" : "进行中";
+    if (normalized === "进行中") return pastDeadline ? "已超期" : "进行中";
+    return normalized;
+  }
+
+  if (pastDeadline) return "已超期";
   return "未开始";
 }
 
@@ -225,16 +285,30 @@ function getWorkRowData(reqs) {
   return ordered;
 }
 
-function renderStatusCell(kind, status, reqId) {
-  return `
-    <td class="col-work-${kind}-st">
-      <div class="filter-btn-wrap rd-status-wrap rd-row-status-wrap">
-        <button type="button" class="iter-detail-status-badge rd-status-btn ${statusBadgeClass(status)}" data-status-kind="${kind}" data-req-id="${reqId}" aria-haspopup="listbox" aria-expanded="false">
-          <span>${escapeHtml(status)}</span>
-          <img src="assets/icons/chevron-down.svg" alt="" width="10" height="10" />
-        </button>
-      </div>
-    </td>`;
+/** 同一次提测合并为一行：优先 batchId，否则按版本+链接+提测人+建议聚合 */
+function getSubmitBatchKey(r) {
+  if (r && r.testSubmitBatchId) return `batch:${r.testSubmitBatchId}`;
+  const ver = String(r.testSubmitVersion || "").trim();
+  const link = String(r.testBuildUrl || "").trim();
+  const owner = String(r.testSubmitter || "").trim();
+  const advice = String(r.testAdvice || "").trim();
+  if (!ver && !link) return `solo:${r.id}`;
+  return `auto:${ver}|${link}|${owner}|${advice}`;
+}
+
+function getWorkGroups(reqs) {
+  const rows = getWorkRowData(reqs);
+  const groups = new Map();
+  const order = [];
+  rows.forEach((r) => {
+    const key = getSubmitBatchKey(r);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key).push(r);
+  });
+  return order.map((key) => ({ key, members: groups.get(key) }));
 }
 
 function testConclusionBadge(row) {
@@ -244,36 +318,62 @@ function testConclusionBadge(row) {
     const cls = upper.includes("FAIL") || upper.includes("不通过") ? "is-fail" : "is-pass";
     return `<span class="iter-detail-result-badge ${cls}">${escapeHtml(conclusion)}</span>`;
   }
-  if (row.testPhaseStatus === "已完成" || (row.testReportUrl && String(row.testReportUrl).trim())) {
-    return `<span class="iter-detail-result-badge is-pass">PASS</span>`;
+  return `<span class="rd-work-fill-hint">点击填写</span>`;
+}
+
+function renderWorkEditCell(reqIds, focus, className, inner, title) {
+  const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
+  return `<td class="${className} rd-work-edit-cell" data-action="edit-work" data-req-id="${escapeHtml(reqIds)}" data-focus="${focus}"${titleAttr}>${inner}</td>`;
+}
+
+function renderWorkReqNamesCell(members) {
+  const blocks = members
+    .map((row) => {
+      const code = getReqCode(row);
+      return `
+      <div class="rd-work-req-item">
+        <div class="rd-req-name-title" title="${escapeHtml(row.title)}">${escapeHtml(row.title || "-")}</div>
+        <div class="rd-req-name-code">${escapeHtml(code)}</div>
+      </div>`;
+    })
+    .join("");
+  return `<td class="col-work-req rd-req-name-cell"><div class="rd-work-req-stack">${blocks}</div></td>`;
+}
+
+function pickGroupField(members, getter) {
+  for (const m of members) {
+    const v = getter(m);
+    if (v != null && String(v).trim()) return v;
   }
-  if (row.testPhaseStatus === "进行中" || row.status === "测试中") {
-    return `<span class="iter-detail-result-badge is-running">进行中</span>`;
-  }
-  return `<span class="iter-detail-cell-muted">-</span>`;
+  return "";
 }
 
 function renderWorkRows(reqs, limit) {
-  const rows = getWorkRowData(reqs);
-  if (!rows.length) return `<tr><td class="empty-row" colspan="10">暂无研测记录</td></tr>`;
-  const list = limit != null ? rows.slice(0, limit) : rows;
+  const groups = getWorkGroups(reqs);
+  if (!groups.length) return `<tr><td class="empty-row" colspan="8">暂无研测记录</td></tr>`;
+  const list = limit != null ? groups.slice(0, limit) : groups;
   return list
-    .map((r) => {
-      const report = r.testReportUrl && String(r.testReportUrl).trim();
-      const note = (r.testRemark && String(r.testRemark).trim()) || "";
-      const advice = (r.testAdvice && String(r.testAdvice).trim()) || "";
+    .map(({ members }) => {
+      const primary = members[0];
+      const ids = members.map((m) => m.id).join(",");
+      const report = pickGroupField(members, (r) => r.testReportUrl);
+      const note = pickGroupField(members, (r) => r.testRemark);
+      const advice = pickGroupField(members, (r) => r.testAdvice);
+      const conclusionRow =
+        members.find((m) => m.testConclusion && String(m.testConclusion).trim()) || primary;
+      const reportInner = report
+        ? `<span class="iter-detail-cell-link is-underline">${escapeHtml(report)}</span>`
+        : '<span class="rd-work-fill-hint">点击填写</span>';
       return `
-    <tr data-req-id="${r.id}">
-      ${renderReqNameCell(r, "col-work-req")}
-      ${renderStatusCell("dev", getReqDevStatus(r), r.id)}
-      <td class="col-work-ver">${escapeHtml(r.testSubmitVersion || r.version || "-")}</td>
-      <td class="col-work-link">${linkOrDash(r.testBuildUrl, { underline: true })}</td>
-      <td class="col-work-owner">${escapeHtml(r.testSubmitter || r.owner || "-")}</td>
+    <tr data-req-id="${escapeHtml(ids)}">
+      ${renderWorkReqNamesCell(members)}
+      <td class="col-work-ver">${escapeHtml(primary.testSubmitVersion || primary.version || "-")}</td>
+      <td class="col-work-link">${linkOrDash(primary.testBuildUrl, { underline: true })}</td>
+      <td class="col-work-owner">${escapeHtml(primary.testSubmitter || primary.owner || "-")}</td>
       <td class="col-work-advice" title="${escapeHtml(advice)}">${advice ? escapeHtml(advice) : '<span class="iter-detail-cell-muted">-</span>'}</td>
-      ${renderStatusCell("test", getReqTestStatus(r), r.id)}
-      <td class="col-work-result">${testConclusionBadge(r)}</td>
-      <td class="col-work-report">${report ? linkOrDash(report, { underline: true }) : '<span class="iter-detail-cell-muted">-</span>'}</td>
-      <td class="col-work-note" title="${escapeHtml(note)}">${note ? escapeHtml(note) : '<span class="iter-detail-cell-muted">-</span>'}</td>
+      ${renderWorkEditCell(ids, "conclusion", "col-work-result", testConclusionBadge(conclusionRow))}
+      ${renderWorkEditCell(ids, "report", "col-work-report", reportInner, report)}
+      ${renderWorkEditCell(ids, "note", "col-work-note", note ? escapeHtml(note) : '<span class="iter-detail-cell-muted">-</span>', note)}
     </tr>`;
     })
     .join("");
@@ -281,55 +381,122 @@ function renderWorkRows(reqs, limit) {
 
 function updateInfoMoreButtons(reqs) {
   const btn = document.getElementById("detail-work-more-btn");
-  if (btn) btn.hidden = getWorkRowData(reqs).length <= INFO_PREVIEW_LIMIT;
+  if (btn) btn.hidden = getWorkGroups(reqs).length <= INFO_PREVIEW_LIMIT;
 }
 
 function syncIterationStatusFromReqs(iteration, reqs) {
   if (!iteration || !reqs.length) return;
-  const workReqs = getWorkRowData(reqs);
-  const source = workReqs.length ? workReqs : reqs;
-  const devStatuses = source.map(getReqDevStatus);
-  const testStatuses = source.map(getReqTestStatus);
+  // 注意：整体“已完成”必须基于迭代内的全部需求，而不是仅基于已填过字段的子集。
+  // 否则会出现：只转测了部分需求，却被误判为“已完成”。
+  const devStatuses = reqs.map(getReqDevStatus);
+  const testStatuses = reqs.map(getReqTestStatus);
+  const isDone = (s) => s === "已完成" || s === "超期完成";
   const pick = (list) => {
-    if (list.every((s) => s === "已完成")) return "已完成";
+    if (list.every(isDone)) {
+      return list.some((s) => s === "超期完成") ? "超期完成" : "已完成";
+    }
     if (list.some((s) => s === "已超期")) return "已超期";
-    if (list.some((s) => s === "进行中" || s === "已完成")) return "进行中";
+    if (list.some((s) => s === "进行中" || isDone(s))) return "进行中";
     return "未开始";
   };
   iteration.rdDevStatus = pick(devStatuses);
   iteration.rdTestStatus = pick(testStatuses);
 }
 
+function renderIterStatusControl(kind, status) {
+  const label = displayRdWorkStatus(status);
+  return `
+    <div class="rd-detail-status-item">
+      <span class="rd-detail-status-label">${kind === "dev" ? "开发状态" : "测试状态"}</span>
+      <div class="filter-btn-wrap rd-status-wrap">
+        <button type="button" class="iter-detail-status-badge rd-status-btn ${statusBadgeClass(status)}" data-status-kind="${kind}" data-status="${escapeHtml(status)}" data-scope="iteration" aria-haspopup="listbox" aria-expanded="false">
+          <span>${escapeHtml(label)}</span>
+          <img src="assets/icons/chevron-down.svg" alt="" width="10" height="10" />
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderWorkStatusHeader(iteration) {
+  const dev = getRdIterationDevStatus(iteration);
+  const test = getRdIterationTestStatus(iteration);
+  return `${renderIterStatusControl("dev", dev)}${renderIterStatusControl("test", test)}`;
+}
+
 function renderHeaderSchedule(iteration) {
   const dates = (iteration && iteration.dates) || {};
   const items = [
-    { label: "开发", start: dates.devStart, end: dates.devEnd },
-    { label: "测试", start: dates.testStart, end: dates.testEnd },
+    { label: "开发时间", start: dates.devStart, end: dates.devEnd },
+    { label: "测试时间", start: dates.testStart, end: dates.testEnd },
   ];
   const parts = items
     .map((item) => {
       const range =
         item.start && item.end ? `${item.start} ~ ${item.end}` : item.start || item.end || "未排期";
-      return `<span class="rd-detail-header-schedule-item"><span class="rd-detail-header-schedule-label">${escapeHtml(item.label)}</span>${escapeHtml(range)}</span>`;
+      return `<span class="rd-detail-header-schedule-item"><span class="rd-detail-header-schedule-label">${escapeHtml(item.label)}</span><span class="rd-detail-header-schedule-value">${escapeHtml(range)}</span></span>`;
     })
-    .join('<span class="rd-detail-header-schedule-sep">·</span>');
+    .join("");
   return parts || `<span class="rd-detail-header-schedule-item">未排期</span>`;
+}
+
+function getApkFieldValue(iteration, key) {
+  if (!iteration || !Object.prototype.hasOwnProperty.call(iteration, key)) return "";
+  return String(iteration[key] ?? "").trim();
+}
+
+function renderApkReadonlyField(label) {
+  return `
+    <div class="iter-detail-apk-item">
+      <span class="iter-detail-apk-label">${escapeHtml(label)}</span>
+      <span class="iter-detail-cell-muted">-</span>
+    </div>`;
+}
+
+function renderApkEditableField(kind, label, value, inputType) {
+  const hasValue = !!value;
+  const safe = escapeHtml(value);
+  const input = `<input class="field-input rd-apk-input" data-apk-input="${kind}" type="${inputType}" value="${safe}" hidden placeholder="${kind === "apkUrl" ? "https://" : "如 17.0.0.001"}" />`;
+
+  if (hasValue) {
+    const display =
+      kind === "apkUrl"
+        ? `<a class="iter-detail-cell-link is-underline rd-apk-value" href="${safe}" target="_blank" rel="noopener" title="${safe}">${safe}</a>`
+        : `<span class="rd-apk-value" title="${safe}">${safe}</span>`;
+    return `
+      <div class="iter-detail-apk-item rd-apk-field" data-apk-field="${kind}">
+        <span class="iter-detail-apk-label">${escapeHtml(label)}</span>
+        <div class="rd-apk-value-wrap">
+          ${display}
+          <button type="button" class="rd-apk-edit-btn" data-action="apk-edit" title="编辑" aria-label="编辑${escapeHtml(label)}">
+            <img src="assets/icons/pencil.svg" alt="" />
+          </button>
+        </div>
+        ${input}
+      </div>`;
+  }
+
+  return `
+    <div class="iter-detail-apk-item rd-apk-field is-empty" data-apk-field="${kind}">
+      <span class="iter-detail-apk-label">${escapeHtml(label)}</span>
+      <button type="button" class="rd-apk-placeholder" data-action="apk-edit">点击填写</button>
+      ${input}
+    </div>`;
 }
 
 function renderApkInfo(iteration) {
   const metrics = getRdWorkspaceMetrics(iteration);
+  const apkUrl = getApkFieldValue(iteration, "apkUrl");
+  const apkVersion = getApkFieldValue(iteration, "apkVersion");
+  const diText =
+    metrics.diRate != null && metrics.diRate !== ""
+      ? `${escapeHtml(String(metrics.diRate))}%`
+      : '<span class="iter-detail-cell-muted">-</span>';
   return `
-    <div class="iter-detail-apk-item">
-      <span class="iter-detail-apk-label">APK 链接</span>
-      ${linkOrDash(metrics.apkUrl, { underline: true })}
-    </div>
-    <div class="iter-detail-apk-item">
-      <span class="iter-detail-apk-label">APK 版本号</span>
-      <span>${escapeHtml(metrics.apkVersion)}</span>
-    </div>
+    ${renderApkEditableField("apkUrl", "APK 链接", apkUrl, "url")}
+    ${renderApkEditableField("apkVersion", "APK 版本号", apkVersion, "text")}
     <div class="iter-detail-apk-item">
       <span class="iter-detail-apk-label">DI 解决率</span>
-      <span class="rd-detail-di-rate">${escapeHtml(String(metrics.diRate))}%</span>
+      <span class="rd-detail-di-rate">${diText}</span>
     </div>`;
 }
 
@@ -355,7 +522,7 @@ function getDrawerProducts() {
 }
 
 function drawerStatusBadge(status) {
-  return `<span class="iter-drawer-status ${statusBadgeClass(status)}">${escapeHtml(status)}</span>`;
+  return `<span class="iter-drawer-status ${statusBadgeClass(status)}">${escapeHtml(displayRdWorkStatus(status))}</span>`;
 }
 
 function formatDrawerRange(dates) {
@@ -420,8 +587,8 @@ function renderDrawer(product, currentName) {
   listEl.innerHTML = list
     .map((it) => {
       const active = it.name === currentName;
-      const status = getRdIterationDevStatus(it);
-      const drawerParam = isDrawerCurrentlyOpen() ? "&drawer=open" : "";
+      const status = getRdIterationOverallStatus(it);
+      const drawerParam = isDrawerCurrentlyOpen() || isDrawerOpenFromQuery() ? "&drawer=open" : "";
       const href = `rd-workspace-detail.html?product=${encodeURIComponent(product)}&name=${encodeURIComponent(it.name)}${drawerParam}`;
       const chevron = active
         ? "assets/icons/chevron-right-active.svg"
@@ -488,80 +655,87 @@ function closeAllStatusMenus() {
   });
 }
 
-function findReqById(id) {
-  return getIterationRequirements(pageState.name, pageState.product).find((r) => r.id === Number(id));
-}
+function applyIterStatus(kind, value) {
+  const iteration = findIteration(pageState.name, pageState.product);
+  if (!iteration) return false;
+  const allReqs = getIterationRequirements(pageState.name, pageState.product);
+  const workReqs = getWorkRowData(allReqs);
+  const targets = workReqs.length ? workReqs : allReqs;
 
-function applyReqStatus(kind, reqId, value) {
-  const row = findReqById(reqId);
-  if (!row) return false;
   if (kind === "dev") {
     if (value === "已完成") {
-      if (!row.testBuildUrl || !String(row.testBuildUrl).trim()) {
+      const missingBuild = targets.find((r) => !r.testBuildUrl || !String(r.testBuildUrl).trim());
+      if (missingBuild) {
         alert("标记开发完成前，需先填写提测版本 / 提测链接（可使用一键转测）");
         return false;
       }
-      if (getAiPrdLabel(row) && !getAiPrdFeedbackText(row)) {
-        alert("该需求有 AI PRD，请先填写反馈后再标记开发完成");
+      const missingFeedback = targets.find((r) => getAiPrdLabel(r) && !getAiPrdFeedbackText(r));
+      if (missingFeedback) {
+        alert("存在含 AI PRD 的需求未填写反馈，请先填写后再标记开发完成");
         return false;
       }
     }
-    row.devPhaseStatus = value;
+    const devDeadline = iteration.dates && iteration.dates.devEnd;
+    iteration.rdDevStatus =
+      value === "已完成" && devDeadline && todayISO() > devDeadline ? "超期完成" : value;
+    targets.forEach((r) => {
+      r.devPhaseStatus = value;
+    });
   } else {
     if (value === "已完成") {
-      const hasConclusion = row.testConclusion && String(row.testConclusion).trim();
-      const hasReport = row.testReportUrl && String(row.testReportUrl).trim();
-      if (!hasConclusion && !hasReport) {
-        alert("标记测试完成前，需填写测试结论或测试报告");
+      const missing = targets.find((r) => {
+        const hasConclusion = r.testConclusion && String(r.testConclusion).trim();
+        const hasReport = r.testReportUrl && String(r.testReportUrl).trim();
+        return !hasConclusion || !hasReport;
+      });
+      if (missing) {
+        alert("标记测试完成前，需填写测试结论和测试报告");
         return false;
       }
     }
-    row.testPhaseStatus = value;
+    const testDeadline = iteration.dates && iteration.dates.testEnd;
+    iteration.rdTestStatus =
+      value === "已完成" && testDeadline && todayISO() > testDeadline ? "超期完成" : value;
+    targets.forEach((r) => {
+      r.testPhaseStatus = value;
+    });
   }
-  const iteration = findIteration(pageState.name, pageState.product);
-  const reqs = getIterationRequirements(pageState.name, pageState.product);
-  syncIterationStatusFromReqs(iteration, reqs);
   return true;
 }
 
 function setupStatusDropdowns() {
-  const bindHost = (host) => {
-    if (!host || host.dataset.statusBound === "1") return;
-    host.dataset.statusBound = "1";
-    host.addEventListener("click", (e) => {
-      const btn = e.target.closest(".rd-status-btn[data-status-kind]");
-      if (!btn) return;
-      e.stopPropagation();
-      const kind = btn.dataset.statusKind;
-      const reqId = btn.dataset.reqId;
-      const wrap = btn.closest(".rd-status-wrap");
-      if (!wrap) return;
-      const willOpen = btn.getAttribute("aria-expanded") !== "true";
-      closeAllStatusMenus();
-      if (!willOpen) return;
-      const current = btn.querySelector("span")?.textContent || "";
-      const menu = document.createElement("div");
-      menu.className = "dropdown rd-status-dropdown rd-row-status-menu";
-      menu.innerHTML = RD_WORK_STATUSES.map(
-        (s) =>
-          `<button type="button" class="${s === current ? "selected" : ""}" data-value="${escapeHtml(s)}">${escapeHtml(s)}</button>`
-      ).join("");
-      wrap.appendChild(menu);
-      btn.setAttribute("aria-expanded", "true");
-      menu.addEventListener("click", (ev) => {
-        const opt = ev.target.closest("button[data-value]");
-        if (!opt) return;
-        ev.stopPropagation();
-        if (applyReqStatus(kind, reqId, opt.dataset.value)) {
-          closeAllStatusMenus();
-          refreshOverview();
-        }
-      });
+  const host = document.getElementById("detail-work-status");
+  if (!host || host.dataset.statusBound === "1") return;
+  host.dataset.statusBound = "1";
+  host.addEventListener("click", (e) => {
+    const btn = e.target.closest(".rd-status-btn[data-status-kind]");
+    if (!btn) return;
+    e.stopPropagation();
+    const kind = btn.dataset.statusKind;
+    const wrap = btn.closest(".rd-status-wrap");
+    if (!wrap) return;
+    const willOpen = btn.getAttribute("aria-expanded") !== "true";
+    closeAllStatusMenus();
+    if (!willOpen) return;
+    const current = btn.dataset.status || btn.querySelector("span")?.textContent || "";
+    const menu = document.createElement("div");
+    menu.className = "dropdown rd-status-dropdown rd-row-status-menu";
+    menu.innerHTML = RD_WORK_STATUSES.map((s) => {
+      const selected = s === current || (s === "已完成" && current === "超期完成");
+      return `<button type="button" class="${selected ? "selected" : ""}" data-value="${escapeHtml(s)}">${escapeHtml(s)}</button>`;
+    }).join("");
+    wrap.appendChild(menu);
+    btn.setAttribute("aria-expanded", "true");
+    menu.addEventListener("click", (ev) => {
+      const opt = ev.target.closest("button[data-value]");
+      if (!opt) return;
+      ev.stopPropagation();
+      if (applyIterStatus(kind, opt.dataset.value)) {
+        closeAllStatusMenus();
+        refreshOverview();
+      }
     });
-  };
-
-  bindHost(document.getElementById("detail-work-tbody"));
-  bindHost(document.getElementById("rd-info-more-tbody"));
+  });
   document.addEventListener("click", () => closeAllStatusMenus());
 }
 
@@ -614,28 +788,29 @@ function applyAiPrdFeedback(row, content, owner) {
   else row.aiPrdFeedback = text.split("\n")[0].trim();
 }
 
-function openSubmitModal() {
+function openSubmitModal(preselectId) {
   const modal = document.getElementById("rd-submit-modal");
   const reqs = getIterationRequirements(pageState.name, pageState.product);
+  const onlyId = preselectId != null && preselectId !== "" ? Number(preselectId) : null;
   const list = document.getElementById("rd-submit-req-list");
-  list.innerHTML = reqs.length
-    ? reqs
+  const selectable = reqs.filter((r) => !isReqSubmittedForTest(r));
+  list.innerHTML = selectable.length
+    ? selectable
         .map((r) => {
-          const done = r.testBuildUrl && String(r.testBuildUrl).trim();
           const hasAi = !!getAiPrdLabel(r);
+          const checked = onlyId != null ? r.id === onlyId : true;
           return `
           <label class="rd-submit-req-item">
-            <input type="checkbox" data-id="${r.id}" data-has-ai-prd="${hasAi ? "1" : "0"}" ${done ? "" : "checked"} />
+            <input type="checkbox" data-id="${r.id}" data-has-ai-prd="${hasAi ? "1" : "0"}" ${checked ? "checked" : ""} />
             <span class="rd-submit-req-title">${escapeHtml(r.title)}</span>
             ${hasAi ? '<span class="rd-submit-ai-tag">AI PRD</span>' : ""}
             <span class="rd-submit-req-code">${escapeHtml(getReqCode(r))}</span>
           </label>`;
         })
         .join("")
-    : '<p class="iter-detail-empty-inline">当前迭代暂无需求</p>';
+    : '<p class="iter-detail-empty-inline">暂无可转测需求（均已转测）</p>';
 
-  const metrics = getRdWorkspaceMetrics(findIteration(pageState.name, pageState.product));
-  document.getElementById("rd-submit-version").value = metrics.apkVersion || "";
+  document.getElementById("rd-submit-version").value = "";
   document.getElementById("rd-submit-link").value = "";
   document.getElementById("rd-submit-note").value = "";
   document.getElementById("rd-submit-feedback").value = "";
@@ -653,7 +828,12 @@ function closeSubmitModal() {
 }
 
 function setupSubmitModal() {
-  document.getElementById("btn-rd-submit-test").addEventListener("click", openSubmitModal);
+  document.getElementById("btn-rd-submit-test").addEventListener("click", () => openSubmitModal());
+  document.getElementById("detail-req-tbody").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="submit-test"]');
+    if (!btn) return;
+    openSubmitModal(btn.dataset.id);
+  });
   document.getElementById("rd-submit-modal-close").addEventListener("click", closeSubmitModal);
   document.getElementById("rd-submit-modal-cancel").addEventListener("click", closeSubmitModal);
   document.getElementById("rd-submit-modal").addEventListener("click", (e) => {
@@ -729,26 +909,24 @@ function setupSubmitModal() {
 
     const ids = new Set(checked.map((c) => Number(c.dataset.id)));
     const reqs = getIterationRequirements(pageState.name, pageState.product);
+    const batchId = `submit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let count = 0;
     reqs.forEach((r) => {
       if (!ids.has(r.id)) return;
+      r.testSubmitBatchId = batchId;
       r.testSubmitVersion = version;
       r.testBuildUrl = link;
       r.testSubmitter = owner;
       r.testAdvice = note;
       if (feedback && getAiPrdLabel(r)) applyAiPrdFeedback(r, feedback, owner);
       r.devPhaseStatus = "已完成";
-      if (!r.testPhaseStatus || r.testPhaseStatus === "未开始") r.testPhaseStatus = "进行中";
-      if (r.status === "开发中" || r.status === "已排期") r.status = "测试中";
       count += 1;
     });
 
     const iteration = findIteration(pageState.name, pageState.product);
     if (iteration) {
-      iteration.rdDevStatus = "已完成";
-      if (!iteration.rdTestStatus || iteration.rdTestStatus === "未开始") {
-        iteration.rdTestStatus = "进行中";
-      }
+      const allReqs = getIterationRequirements(pageState.name, pageState.product);
+      syncIterationStatusFromReqs(iteration, allReqs);
     }
 
     closeSubmitModal();
@@ -774,6 +952,237 @@ function setupInfoMore() {
   });
 }
 
+const WORK_EDIT_FOCUS_MAP = {
+  conclusion: "rd-work-edit-conclusion-btn",
+  report: "rd-work-edit-report",
+  note: "rd-work-edit-note",
+};
+
+const TEST_CONCLUSION_OPTIONS = ["PASS", "FAIL"];
+
+function normalizeTestConclusionOption(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const upper = raw.toUpperCase();
+  if (upper.includes("FAIL") || raw.includes("不通过")) return "FAIL";
+  if (upper.includes("PASS") || raw.includes("通过")) return "PASS";
+  return "";
+}
+
+function setWorkEditConclusion(value) {
+  const normalized = normalizeTestConclusionOption(value);
+  const hidden = document.getElementById("rd-work-edit-conclusion");
+  const text = document.getElementById("rd-work-edit-conclusion-text");
+  if (!hidden || !text) return;
+  hidden.value = normalized;
+  text.classList.remove("is-pass", "is-fail");
+  if (normalized) {
+    text.textContent = normalized;
+    text.classList.remove("placeholder");
+    text.classList.add(normalized === "FAIL" ? "is-fail" : "is-pass");
+  } else {
+    text.textContent = text.dataset.placeholder || "请选择";
+    text.classList.add("placeholder");
+  }
+}
+
+function findWorkReqsByIds(idsText) {
+  const ids = String(idsText || "")
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  const all = getIterationRequirements(pageState.name, pageState.product);
+  return ids.map((id) => all.find((r) => r.id === id)).filter(Boolean);
+}
+
+function openWorkEditModal(reqIds, focus) {
+  const rows = findWorkReqsByIds(reqIds);
+  if (!rows.length) return;
+  const primary = rows[0];
+  document.getElementById("rd-work-edit-req-id").value = rows.map((r) => r.id).join(",");
+  document.getElementById("rd-work-edit-req-name").textContent = rows
+    .map((r) => `${r.title || "-"} · ${getReqCode(r)}`)
+    .join("；");
+  const rawConclusion =
+    pickGroupField(rows, (r) => r.testConclusion) || primary.testConclusion || "";
+  setWorkEditConclusion(rawConclusion);
+  document.getElementById("rd-work-edit-conclusion-menu").hidden = true;
+  document.getElementById("rd-work-edit-report").value =
+    pickGroupField(rows, (r) => r.testReportUrl) || primary.testReportUrl || "";
+  document.getElementById("rd-work-edit-note").value =
+    pickGroupField(rows, (r) => r.testRemark) || primary.testRemark || "";
+  document.getElementById("rd-work-edit-modal").hidden = false;
+  const focusId = WORK_EDIT_FOCUS_MAP[focus] || "rd-work-edit-conclusion-btn";
+  requestAnimationFrame(() => {
+    const el = document.getElementById(focusId);
+    if (el) {
+      el.focus();
+      if (typeof el.select === "function") el.select();
+    }
+  });
+}
+
+function closeWorkEditModal() {
+  document.getElementById("rd-work-edit-modal").hidden = true;
+  const menu = document.getElementById("rd-work-edit-conclusion-menu");
+  if (menu) menu.hidden = true;
+}
+
+function saveWorkEditModal() {
+  const rows = findWorkReqsByIds(document.getElementById("rd-work-edit-req-id").value);
+  if (!rows.length) return;
+  const conclusion = document.getElementById("rd-work-edit-conclusion").value.trim();
+  const report = document.getElementById("rd-work-edit-report").value.trim();
+  const note = document.getElementById("rd-work-edit-note").value.trim();
+  if (!conclusion || !TEST_CONCLUSION_OPTIONS.includes(conclusion)) {
+    alert("请选择测试结论（PASS 或 FAIL）");
+    return;
+  }
+  if (!report) {
+    alert("请填写测试报告");
+    return;
+  }
+  rows.forEach((row) => {
+    row.testConclusion = conclusion;
+    row.testReportUrl = report;
+    row.testRemark = note;
+    row.testPhaseStatus = "已完成";
+  });
+  const iteration = findIteration(pageState.name, pageState.product);
+  const allReqs = getIterationRequirements(pageState.name, pageState.product);
+  syncIterationStatusFromReqs(iteration, allReqs);
+  closeWorkEditModal();
+  refreshOverview();
+  const moreModal = document.getElementById("rd-info-more-modal");
+  if (moreModal && !moreModal.hidden) {
+    document.getElementById("rd-info-more-tbody").innerHTML = renderWorkRows(allReqs);
+  }
+}
+
+function setupWorkEditModal() {
+  const bindTable = (tbody) => {
+    if (!tbody || tbody.dataset.workEditBound === "1") return;
+    tbody.dataset.workEditBound = "1";
+    tbody.addEventListener("click", (e) => {
+      const cell = e.target.closest('[data-action="edit-work"]');
+      if (!cell) return;
+      e.preventDefault();
+      openWorkEditModal(cell.dataset.reqId, cell.dataset.focus);
+    });
+  };
+
+  bindTable(document.getElementById("detail-work-tbody"));
+  bindTable(document.getElementById("rd-info-more-tbody"));
+  document.getElementById("rd-work-edit-close").addEventListener("click", closeWorkEditModal);
+  document.getElementById("rd-work-edit-cancel").addEventListener("click", closeWorkEditModal);
+  document.getElementById("rd-work-edit-save").addEventListener("click", saveWorkEditModal);
+  document.getElementById("rd-work-edit-modal").addEventListener("click", (e) => {
+    if (e.target.id === "rd-work-edit-modal") closeWorkEditModal();
+  });
+
+  const conclusionBtn = document.getElementById("rd-work-edit-conclusion-btn");
+  const conclusionMenu = document.getElementById("rd-work-edit-conclusion-menu");
+  if (conclusionBtn && conclusionMenu) {
+    conclusionBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const current = document.getElementById("rd-work-edit-conclusion").value;
+      conclusionMenu.innerHTML = TEST_CONCLUSION_OPTIONS.map(
+        (o) =>
+          `<button type="button" class="${o === current ? "selected " : ""}conclusion-option" data-value="${o}"><span class="select-text ${o === "FAIL" ? "is-fail" : "is-pass"}">${escapeHtml(o)}</span></button>`
+      ).join("");
+      conclusionMenu.hidden = !conclusionMenu.hidden;
+    });
+    conclusionMenu.addEventListener("click", (e) => {
+      const opt = e.target.closest("button[data-value]");
+      if (!opt) return;
+      setWorkEditConclusion(opt.dataset.value);
+      conclusionMenu.hidden = true;
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#rd-work-edit-conclusion-wrap")) conclusionMenu.hidden = true;
+    });
+  }
+}
+
+function beginApkFieldEdit(fieldEl) {
+  if (!fieldEl || fieldEl.classList.contains("is-editing")) return;
+  const input = fieldEl.querySelector(".rd-apk-input");
+  if (!input) return;
+  fieldEl.classList.add("is-editing");
+  fieldEl.classList.remove("is-empty");
+  const valueWrap = fieldEl.querySelector(".rd-apk-value-wrap");
+  const placeholder = fieldEl.querySelector(".rd-apk-placeholder");
+  if (valueWrap) {
+    valueWrap.hidden = true;
+    valueWrap.style.display = "none";
+  }
+  if (placeholder) {
+    placeholder.hidden = true;
+    placeholder.style.display = "none";
+  }
+  input.hidden = false;
+  input.style.display = "";
+  input.focus();
+  input.select();
+}
+
+function commitApkFieldEdit(fieldEl) {
+  if (!fieldEl || !fieldEl.classList.contains("is-editing")) return;
+  const input = fieldEl.querySelector(".rd-apk-input");
+  const kind = fieldEl.dataset.apkField;
+  if (!input || !kind) return;
+  const iteration = findIteration(pageState.name, pageState.product);
+  if (!iteration) return;
+  iteration[kind] = input.value.trim();
+  const grid = document.getElementById("detail-apk-grid");
+  if (grid) grid.innerHTML = renderApkInfo(iteration);
+}
+
+function setupApkInlineEdit() {
+  const grid = document.getElementById("detail-apk-grid");
+  if (!grid || grid.dataset.apkEditBound === "1") return;
+  grid.dataset.apkEditBound = "1";
+
+  grid.addEventListener("click", (e) => {
+    const editBtn = e.target.closest('[data-action="apk-edit"]');
+    if (editBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      beginApkFieldEdit(editBtn.closest(".rd-apk-field"));
+      return;
+    }
+    const emptyField = e.target.closest(".rd-apk-field.is-empty");
+    if (emptyField) {
+      e.preventDefault();
+      beginApkFieldEdit(emptyField);
+    }
+  });
+
+  grid.addEventListener("keydown", (e) => {
+    const input = e.target.closest(".rd-apk-input");
+    if (!input) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitApkFieldEdit(input.closest(".rd-apk-field"));
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      const iteration = findIteration(pageState.name, pageState.product);
+      if (iteration) grid.innerHTML = renderApkInfo(iteration);
+    }
+  });
+
+  grid.addEventListener("focusout", (e) => {
+    const fieldEl = e.target.closest(".rd-apk-field");
+    if (!fieldEl || !fieldEl.classList.contains("is-editing")) return;
+    // 只在「输入框」失焦时提交，避免点击按钮/占位文字导致立刻回填空值
+    const inputEl = e.target.closest(".rd-apk-input");
+    if (!inputEl) return;
+    // 焦点仍在同一字段内（如无）则不提交
+    if (fieldEl.contains(e.relatedTarget)) return;
+    commitApkFieldEdit(fieldEl);
+  });
+}
+
 function refreshOverview() {
   const { product, name } = pageState;
   const iteration = findIteration(name, product);
@@ -786,12 +1195,15 @@ function refreshOverview() {
   const filtered = filterReqs(reqs);
   const tbody = document.getElementById("detail-req-tbody");
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td class="empty-row" colspan="11">暂无所属需求</td></tr>`;
+    tbody.innerHTML = `<tr><td class="empty-row" colspan="12">暂无所属需求</td></tr>`;
   } else {
     tbody.innerHTML = filtered.map((r, i) => renderReqRow(r, i % 2 === 1)).join("");
   }
 
   document.getElementById("detail-header-schedule").innerHTML = renderHeaderSchedule(iteration);
+  syncIterationStatusFromReqs(iteration, reqs);
+  const workStatus = document.getElementById("detail-work-status");
+  if (workStatus) workStatus.innerHTML = renderWorkStatusHeader(iteration);
   document.getElementById("detail-work-tbody").innerHTML = renderWorkRows(reqs, INFO_PREVIEW_LIMIT);
   updateInfoMoreButtons(reqs);
   document.getElementById("detail-apk-grid").innerHTML = renderApkInfo(iteration);
@@ -808,6 +1220,8 @@ function renderPage() {
   setupDrawerChrome();
   setupSubmitModal();
   setupInfoMore();
+  setupWorkEditModal();
+  setupApkInlineEdit();
   setupStatusDropdowns();
 
   let timer;

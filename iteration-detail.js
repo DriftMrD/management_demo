@@ -202,15 +202,31 @@ function getTimelineRange(dates) {
   if (!starts.length || !ends.length) return null;
   const min = starts.slice().sort()[0];
   const max = ends.slice().sort().reverse()[0];
-  const total = Math.max(1, daysBetween(min, max));
-  return { min, max, total };
+  const dayCount = Math.max(1, daysBetween(min, max) + 1);
+  return { min, max, dayCount };
+}
+
+function buildPhaseTimelineDays(range) {
+  const days = [];
+  for (let i = 0; i < range.dayCount; i++) {
+    const iso = addDaysISO(range.min, i);
+    const d = parseISODate(iso);
+    days.push({
+      iso,
+      day: d.getDate(),
+      month: d.getMonth() + 1,
+      weekend: d.getDay() === 0 || d.getDay() === 6,
+      isFirst: i === 0,
+    });
+  }
+  return days;
 }
 
 function barStyle(dates, startKey, endKey, range) {
   if (!dates || !range || !dates[startKey] || !dates[endKey]) return "display:none";
-  const left = (daysBetween(range.min, dates[startKey]) / range.total) * 100;
-  const width = (Math.max(1, daysBetween(dates[startKey], dates[endKey]) + 1) / (range.total + 1)) * 100;
-  return `left:${Math.max(0, left)}%;width:${Math.min(100 - left, Math.max(2, width))}%;`;
+  const left = (daysBetween(range.min, dates[startKey]) / range.dayCount) * 100;
+  const width = (Math.max(1, daysBetween(dates[startKey], dates[endKey]) + 1) / range.dayCount) * 100;
+  return `left:${Math.max(0, left)}%;width:${Math.min(100 - left, Math.max(width, 100 / range.dayCount))}%;`;
 }
 
 function actualDisplayFromInfo(info) {
@@ -245,7 +261,33 @@ function renderPhasesTimeline(iteration, dates) {
     return '<p class="iter-detail-empty-inline">暂无排期</p>';
   }
 
-  return PHASE_UI.map((phase) => {
+  const days = buildPhaseTimelineDays(range);
+  const today = todayISO();
+  const dayHeader = days
+    .map((d) => {
+      const label = d.isFirst || d.day === 1 ? `${d.month}/${d.day}` : String(d.day);
+      const cls = [
+        "iter-detail-phase-day-cell",
+        d.weekend ? "is-weekend" : "",
+        d.iso === today ? "is-today" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return `<span class="${cls}" title="${escapeHtml(d.iso)}">${escapeHtml(label)}</span>`;
+    })
+    .join("");
+  const dayGrid = days
+    .map((d) => {
+      const cls = ["iter-detail-phase-day-col", d.weekend ? "is-weekend" : ""].filter(Boolean).join(" ");
+      return `<span class="${cls}" title="${escapeHtml(d.iso)}"></span>`;
+    })
+    .join("");
+
+  const labelRows = [];
+  const trackRows = [];
+  const metaRows = [];
+
+  PHASE_UI.forEach((phase) => {
     const info = getIterationPhaseActualInfo(iteration, phase.key);
     const start = info.planStart;
     const end = info.planEnd;
@@ -254,27 +296,54 @@ function renderPhasesTimeline(iteration, dates) {
       showBar && start && end ? `计划 ${formatMd(start)} - ${formatMd(end)}` : "计划 --";
     const actual = actualDisplayFromInfo(info);
     const barCss = showBar ? barStyle(dates, phase.start, phase.end, range) : "display:none";
-    return `
-      <div class="iter-detail-phase-row${showBar ? "" : " is-na"}">
+    const naCls = showBar ? "" : " is-na";
+
+    labelRows.push(`
+      <div class="iter-detail-phase-label-row${naCls}">
         <span class="iter-detail-phase-accent is-${phase.accent}"></span>
-        <div class="iter-detail-phase-body">
-          <div class="iter-detail-phase-line">
-            <span class="iter-detail-phase-name">${escapeHtml(phase.title)}</span>
-            <div class="iter-detail-phase-bar-track">
-              <span class="iter-detail-phase-bar is-${phase.accent}" style="${barCss}"></span>
-            </div>
-            <div class="iter-detail-phase-dates">
-              <span class="iter-detail-plan-text">${escapeHtml(planText)}</span>
-              <span class="iter-detail-plan-sep">|</span>
-              <span class="iter-detail-actual ${actual.cls}">
-                <span>${escapeHtml(actual.text)}</span>
-                ${actual.icon}
-              </span>
+        <span class="iter-detail-phase-name">${escapeHtml(phase.title)}</span>
+      </div>`);
+
+    trackRows.push(`
+      <div class="iter-detail-phase-track-row${naCls}">
+        <span class="iter-detail-phase-bar is-${phase.accent}" style="${barCss}"></span>
+      </div>`);
+
+    metaRows.push(`
+      <div class="iter-detail-phase-meta-row${naCls}">
+        <div class="iter-detail-phase-dates">
+          <span class="iter-detail-plan-text">${escapeHtml(planText)}</span>
+          <span class="iter-detail-plan-sep">|</span>
+          <span class="iter-detail-actual ${actual.cls}">
+            <span>${escapeHtml(actual.text)}</span>
+            ${actual.icon}
+          </span>
+        </div>
+      </div>`);
+  });
+
+  return `
+    <div class="iter-detail-phases-timeline">
+      <div class="iter-detail-phases-labels-col">
+        <div class="iter-detail-phases-axis-pad" aria-hidden="true"></div>
+        ${labelRows.join("")}
+      </div>
+      <div class="iter-detail-phases-track-col">
+        <div class="iter-detail-phases-track-scroll">
+          <div class="iter-detail-phases-track-inner" style="--phase-day-count:${days.length}">
+            <div class="iter-detail-phases-day-header" aria-hidden="true">${dayHeader}</div>
+            <div class="iter-detail-phases-track-body">
+              <div class="iter-detail-phases-day-grid" aria-hidden="true">${dayGrid}</div>
+              ${trackRows.join("")}
             </div>
           </div>
         </div>
-      </div>`;
-  }).join("");
+      </div>
+      <div class="iter-detail-phases-meta-col">
+        <div class="iter-detail-phases-axis-pad" aria-hidden="true"></div>
+        ${metaRows.join("")}
+      </div>
+    </div>`;
 }
 
 function formatDevTime(row) {
@@ -406,6 +475,17 @@ function drawerStatusBadge(status) {
   return `<span class="iter-drawer-status ${cls}">${escapeHtml(status)}</span>`;
 }
 
+/** 超期完成：【已完成】旁加小号「超期完成」小标题（与详情标题旁样式一致） */
+function drawerStatusBadges(it) {
+  const status =
+    getIterationStatus(it) === "未排期" ? "未排期" : getIterationProgressStatus(it);
+  let html = drawerStatusBadge(status);
+  if (status === "已完成" && isIterationOverdueCompleted(it)) {
+    html += '<span class="iter-overdue-tag">超期完成</span>';
+  }
+  return `<span class="iter-drawer-status-group">${html}</span>`;
+}
+
 function formatDrawerRange(dates) {
   if (!dates || !dates.prdStart || !dates.testEnd) return "未排期";
   return `${dates.prdStart} 至 ${dates.testEnd}`;
@@ -479,8 +559,6 @@ function renderDrawer(product, currentName) {
   listEl.innerHTML = list
     .map((it) => {
       const active = it.name === currentName;
-      const status =
-        getIterationStatus(it) === "未排期" ? "未排期" : getIterationProgressStatus(it);
       const drawerParam = isDrawerCurrentlyOpen() ? "&drawer=open" : "";
       const href = `iteration-detail.html?product=${encodeURIComponent(product)}&name=${encodeURIComponent(it.name)}${drawerParam}`;
       const chevron = active
@@ -491,7 +569,7 @@ function renderDrawer(product, currentName) {
           <div class="iter-drawer-item-main">
             <div class="iter-drawer-item-name-row">
               <span class="iter-drawer-item-name">${escapeHtml(it.name)} 迭代</span>
-              ${drawerStatusBadge(status)}
+              ${drawerStatusBadges(it)}
             </div>
             <p class="iter-drawer-item-dates">${escapeHtml(formatDrawerRange(it.dates))}</p>
           </div>

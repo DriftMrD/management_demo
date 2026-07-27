@@ -42,8 +42,8 @@ REQUIREMENTS.forEach((row) => {
 const SR_SEEDS = [
   { id: 101, parentId: 8, title: "桌面小组件性能优化", product: "日活", status: "开发中", priority: "P0", type: "敏捷迭代", isValue: true, needAnalytics: true, owner: "李明", avatar: "assets/avatars/avatar-2.png", requestDate: "2026-04-12", deliverMonth: "2026-07", version: "16.4", reviewResult: "通过", iteration: "S22" },
   { id: 102, parentId: 21, title: "日活负一屏内容分发", product: "日活", status: "测试中", priority: "P0", type: "TOS版本", isValue: true, needAnalytics: true, owner: "黄志阳", avatar: "assets/avatars/avatar-7.png", requestDate: "2026-03-10", deliverMonth: "2026-06", version: "16.3", reviewResult: "通过", iteration: "S24" },
-  { id: 103, parentId: 9, title: "搜索联想词排序策略升级", product: "搜索", status: "测试中", priority: "P1", type: "敏捷迭代", isValue: true, needAnalytics: true, owner: "王芳", avatar: "assets/avatars/avatar-3.png", requestDate: "2026-03-28", deliverMonth: "2026-06", version: "16.3", reviewResult: "通过", iteration: "S23" },
-  { id: 104, parentId: 14, title: "搜索空结果页引导优化", product: "搜索", status: "测试中", priority: "P2", type: "TOS版本", isValue: false, needAnalytics: true, owner: "张伟", avatar: "assets/avatars/avatar-7.png", requestDate: "2026-04-02", deliverMonth: "2026-05", version: "16.3", reviewResult: "通过", iteration: "S23" },
+  { id: 103, parentId: 9, title: "搜索联想词排序策略升级", product: "搜索", status: "已完成", priority: "P1", type: "敏捷迭代", isValue: true, needAnalytics: true, owner: "王芳", avatar: "assets/avatars/avatar-3.png", requestDate: "2026-03-28", deliverMonth: "2026-06", version: "16.3", reviewResult: "通过", iteration: "S23" },
+  { id: 104, parentId: 14, title: "搜索空结果页引导优化", product: "搜索", status: "已完成", priority: "P2", type: "TOS版本", isValue: false, needAnalytics: true, owner: "张伟", avatar: "assets/avatars/avatar-7.png", requestDate: "2026-04-02", deliverMonth: "2026-05", version: "16.3", reviewResult: "通过", iteration: "S23" },
   { id: 105, parentId: 18, title: "搜索语音输入体验优化", product: "搜索", status: "开发中", priority: "P1", type: "敏捷迭代", isValue: true, needAnalytics: true, owner: "张伟", avatar: "assets/avatars/avatar-4.png", requestDate: "2026-05-18", deliverMonth: "2026-07", version: "16.4", reviewResult: "通过", iteration: "S24" },
   { id: 106, parentId: 22, title: "搜索热榜本地缓存", product: "搜索", status: "已完成", priority: "P2", type: "敏捷迭代", isValue: false, needAnalytics: false, owner: "张伟", avatar: "assets/avatars/avatar-2.png", requestDate: "2026-02-05", deliverMonth: "2026-03", version: "16.1", reviewResult: "通过", iteration: "S24" },
   { id: 107, parentId: 11, title: "百宝箱入口改版", product: "百宝箱", status: "开发中", priority: "P1", type: "TOS版本", isValue: true, needAnalytics: false, owner: "李明", avatar: "assets/avatars/avatar-5.png", requestDate: "2026-05-08", deliverMonth: "2026-08", version: "17.0", reviewResult: "通过", iteration: "S22" },
@@ -1147,25 +1147,61 @@ function seedIterationDeliverables() {
     });
   };
 
-  // 日活 S22：已完成
-  byIter("日活", "S22").forEach(markAllDone);
+  // 日活 S22：部分已完成，部分仍在开发
+  byIter("日活", "S22").forEach((r) => {
+    if (r.status === "已完成" || r.status === "测试中") {
+      markAllDone(r);
+      if (r.status === "测试中") {
+        r.testReportUrl = "";
+      }
+    } else {
+      markDoc(r, {
+        prdUrl: url("prd", r.id),
+        uxUrl: r.needUx ? url("ux", r.id) : "",
+        uiUrl: r.needUi ? url("ui", r.id) : "",
+      });
+      markWork(r, {
+        devPhaseStatus: "进行中",
+        testBuildUrl: "",
+        testReportUrl: "",
+      });
+    }
+  });
 
-  // 日活 S24：进行中 — PRD 已完成，开发进行中，测试未开始
+  // 日活 S24：混合状态 — 部分需求已转测/测试中，部分仍在开发
   byIter("日活", "S24").forEach((r) => {
     markDoc(r, {
       prdUrl: url("prd", r.id),
       uxUrl: r.needUx ? url("ux", r.id) : "",
       uiUrl: "",
     });
-    markWork(r, { devPhaseStatus: "进行中", testBuildUrl: "", testReportUrl: "" });
+    if (r.status === "测试中" || r.status === "已完成") {
+      markWork(r, {
+        devPhaseStatus: "已完成",
+        testBuildUrl: url("build", r.id),
+        testReportUrl: r.status === "已完成" ? url("report", r.id) : "",
+      });
+    } else {
+      markWork(r, { devPhaseStatus: "进行中", testBuildUrl: "", testReportUrl: "" });
+    }
   });
 
-  // 搜索 S23：已完成 + 超期完成（UX/测试实际晚于计划）；TOS 叶子不涉及 UX/UI
+  // 搜索 S23：补齐测试报告后测试验收为已完成；实际晚于计划 → 迭代旁「超期完成」
   byIter("搜索", "S23").forEach((r) => {
     if (isTosType(r)) {
       markDoc(r, { needUx: false, needUi: false });
     }
-    markAllDone(r);
+    markDoc(r, {
+      prdUrl: url("prd", r.id),
+      uxUrl: r.needUx ? url("ux", r.id) : "",
+      uiUrl: r.needUi ? url("ui", r.id) : "",
+    });
+    markWork(r, {
+      devPhaseStatus: "已完成",
+      testPhaseStatus: "已完成",
+      testBuildUrl: url("build", r.id),
+      testReportUrl: url("report", r.id),
+    });
   });
   const searchS23 = findIteration("S23", "搜索");
   if (searchS23 && searchS23.dates) {
@@ -1180,18 +1216,32 @@ function seedIterationDeliverables() {
     };
   }
 
-  // 搜索 S24：UX/UI 不涉及；PRD 进行中（部分已交）；开发进行中
+  // 搜索 S24：UX/UI 不涉及；部分已完成，部分仍在开发
   byIter("搜索", "S24").forEach((r, i) => {
     markDoc(r, {
       needUx: false,
       needUi: false,
-      prdUrl: i === 0 ? url("prd", r.id) : "",
+      prdUrl: i === 0 || r.status === "已完成" ? url("prd", r.id) : "",
     });
-    markWork(r, {
-      devPhaseStatus: "进行中",
-      testBuildUrl: "",
-      testReportUrl: "",
-    });
+    if (r.status === "已完成") {
+      markWork(r, {
+        devPhaseStatus: "已完成",
+        testBuildUrl: url("build", r.id),
+        testReportUrl: url("report", r.id),
+      });
+    } else if (r.status === "测试中") {
+      markWork(r, {
+        devPhaseStatus: "已完成",
+        testBuildUrl: url("build", r.id),
+        testReportUrl: "",
+      });
+    } else {
+      markWork(r, {
+        devPhaseStatus: "进行中",
+        testBuildUrl: "",
+        testReportUrl: "",
+      });
+    }
   });
 
   // 百宝箱 S22：测试验收已超期 → 进展状态「已超期」
@@ -1203,12 +1253,21 @@ function seedIterationDeliverables() {
       needUx: false,
       needUi: false,
     });
-    markWork(r, {
-      devPhaseStatus: "已完成",
-      testBuildUrl: url("build", r.id),
-      testReportUrl: "",
-      testPhaseStatus: null,
-    });
+    if (r.status === "开发中") {
+      markWork(r, {
+        devPhaseStatus: "进行中",
+        testBuildUrl: "",
+        testReportUrl: "",
+        testPhaseStatus: null,
+      });
+    } else {
+      markWork(r, {
+        devPhaseStatus: "已完成",
+        testBuildUrl: url("build", r.id),
+        testReportUrl: r.status === "已完成" ? url("report", r.id) : "",
+        testPhaseStatus: null,
+      });
+    }
   });
 
   // 百宝箱 S23：已完成
@@ -1307,12 +1366,22 @@ function seedIterationChangeLogs() {
       {
         phase: "开发阶段",
         plan: "计划 05/12 - 05/17",
-        actual: "实际: 进行中",
-        actualKind: "running",
-        daysLabel: "预计超期 3天",
-        daysKind: "expected",
+        actual: "实际: 05/20",
+        actualKind: "done-late",
+        daysLabel: "超期 3天",
+        daysKind: "overdue",
         reason: "推送渠道需求新增导致工作量增加",
-        note: "已协调增加1名开发支援，预计05/20完成",
+        note: "已协调增加1名开发支援，最终05/20完成",
+      },
+      {
+        phase: "测试验收",
+        plan: "计划 05/18 - 05/24",
+        actual: "实际: 05/26",
+        actualKind: "done-late",
+        daysLabel: "超期 2天",
+        daysKind: "overdue",
+        reason: "开发延期连带测试收口推迟",
+        note: "已补齐测试报告，结论 PASS",
       },
     ],
     [
@@ -1952,24 +2021,51 @@ function getIterationRemainingReqCount(name, product) {
 }
 
 function normalizeRdWorkStatus(status) {
-  if (status === "已完成" || status === "进行中" || status === "已超期" || status === "未开始") return status;
+  if (status === "已完成" || status === "超期完成" || status === "进行中" || status === "已超期" || status === "未开始") return status;
   return "未开始";
 }
 
-/** 研测工作专区拉取指标（BUG / Gerrit / DI / APK），演示环境伪随机稳定值 */
+/** 规范：超期完成后文案仍为「已完成」，仅用红色样式区分 */
+function displayRdWorkStatus(status) {
+  return status === "超期完成" ? "已完成" : status;
+}
+
+/** 筛选「已完成」时包含超期完成（文案同为已完成） */
+function matchRdWorkStatusFilter(status, filter) {
+  if (!filter || filter === "全部") return true;
+  if (filter === "已完成") return status === "已完成" || status === "超期完成";
+  return status === filter;
+}
+
+/** 研测工作专区拉取指标（BUG / Gerrit / DI / APK），演示环境伪随机稳定值；未转测时无 APK / DI */
 function getRdWorkspaceMetrics(it) {
   const key = `${it && it.product}||${it && it.name}`;
   const seed = rdHashSeed(key);
   const bugCount = rdPseudoInt(seed, 0, 18);
   const gerritAdd = rdPseudoInt(seed + 11, 120, 4200);
   const gerritDel = rdPseudoInt(seed + 29, 40, 2800);
-  const diRate = it && it.diRate != null ? Number(it.diRate) : rdPseudoInt(seed + 47, 55, 100);
+  const hasSubmit =
+    !!it &&
+    getIterationRequirements(it.name, it.product).some(
+      (r) =>
+        (r.testBuildUrl && String(r.testBuildUrl).trim()) ||
+        (r.testSubmitVersion && String(r.testSubmitVersion).trim())
+    );
+  const diRate =
+    it && it.diRate != null
+      ? Number(it.diRate)
+      : hasSubmit
+        ? rdPseudoInt(seed + 47, 55, 100)
+        : null;
   const verPatch = String(rdPseudoInt(seed + 61, 1, 99)).padStart(3, "0");
   const apkVersion =
-    (it && it.apkVersion && String(it.apkVersion).trim()) || `17.0.0.${verPatch}`;
+    (it && it.apkVersion && String(it.apkVersion).trim()) ||
+    (hasSubmit ? `17.0.0.${verPatch}` : "");
   const apkUrl =
     (it && it.apkUrl && String(it.apkUrl).trim()) ||
-    `https://apk.example.com/${encodeURIComponent((it && it.product) || "app")}/${encodeURIComponent((it && it.name) || "S")}/${apkVersion}.apk`;
+    (hasSubmit && apkVersion
+      ? `https://apk.example.com/${encodeURIComponent((it && it.product) || "app")}/${encodeURIComponent((it && it.name) || "S")}/${apkVersion}.apk`
+      : "");
   return { bugCount, gerritAdd, gerritDel, diRate, apkUrl, apkVersion };
 }
 
@@ -1982,6 +2078,23 @@ function getRdIterationDevStatus(it) {
 function getRdIterationTestStatus(it) {
   if (it && it.rdTestStatus) return normalizeRdWorkStatus(it.rdTestStatus);
   return normalizeRdWorkStatus(getIterationPhaseStatus(it, "test"));
+}
+
+/** 研测侧栏汇总：开发+测试都完成才算已完成，任一超期优先展示超期 */
+function getRdIterationOverallStatus(it) {
+  const dev = getRdIterationDevStatus(it);
+  const test = getRdIterationTestStatus(it);
+  const devDone = dev === "已完成" || dev === "超期完成";
+  const testDone = test === "已完成" || test === "超期完成";
+  if (devDone && testDone) {
+    // 内部仍用「超期完成」标记红样式；展示时文案统一为「已完成」
+    return (dev === "超期完成" || test === "超期完成") ? "超期完成" : "已完成";
+  }
+  if (dev === "已超期" || test === "已超期") return "已超期";
+  if (dev === "进行中" || test === "进行中" || devDone || testDone) {
+    return "进行中";
+  }
+  return "未开始";
 }
 
 /** 研测工作专区行数据 */

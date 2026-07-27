@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>研测工作详情</title>
-  <link rel="stylesheet" href="styles.css?v=20260724rd15" />
+  <link rel="stylesheet" href="styles.css?v=20260727rd10" />
 </head>
 <body>
   <div class="page iteration-detail-page rd-detail-page is-drawer-collapsed">
@@ -87,6 +87,7 @@
                     <th class="col-ai-track">AI 埋点</th>
                     <th class="col-ux">UX 链接</th>
                     <th class="col-ui">UI 链接</th>
+                    <th class="col-ops">操作</th>
                   </tr>
                 </thead>
                 <tbody id="detail-req-tbody"></tbody>
@@ -100,18 +101,17 @@
                 <img class="iter-detail-card-icon" src="assets/icons/settings.svg" alt="" />
                 <h2 class="iter-detail-card-title">研测信息</h2>
               </div>
+              <div class="rd-detail-status-group" id="detail-work-status"></div>
             </div>
             <div class="iter-detail-inner-table-wrap">
               <table class="iter-detail-inner-table rd-work-table">
                 <thead>
                   <tr>
                     <th class="col-work-req">所属需求</th>
-                    <th class="col-work-dev-st">开发状态</th>
                     <th class="col-work-ver">提测版本</th>
                     <th class="col-work-link">提测链接</th>
                     <th class="col-work-owner">提测人</th>
                     <th class="col-work-advice">提测建议</th>
-                    <th class="col-work-test-st">测试状态</th>
                     <th class="col-work-result">测试结论</th>
                     <th class="col-work-report">测试报告</th>
                     <th class="col-work-note">测试备注</th>
@@ -205,12 +205,10 @@
             <thead>
               <tr>
                 <th>所属需求</th>
-                <th>开发状态</th>
                 <th>提测版本</th>
                 <th>提测链接</th>
                 <th>提测人</th>
                 <th>提测建议</th>
-                <th>测试状态</th>
                 <th>测试结论</th>
                 <th>测试报告</th>
                 <th>测试备注</th>
@@ -226,7 +224,46 @@
     </div>
   </div>
 
-  <script src="data.js?v=20260724rd2"></script>
-  <script src="rd-workspace-detail.js?v=20260724rd15"></script>
+  <!-- 编辑研测详情：提测建议 / 测试结论 / 测试报告 / 测试备注 -->
+  <div class="modal-overlay" id="rd-work-edit-modal" hidden>
+    <div class="modal modal-schedule rd-work-edit-modal" role="dialog" aria-modal="true" aria-labelledby="rd-work-edit-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="rd-work-edit-title">测试反馈</h2>
+        <button class="modal-close schedule-close-btn" id="rd-work-edit-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <p class="rd-work-edit-req" id="rd-work-edit-req-name"></p>
+        <div class="field">
+          <label class="field-label">测试结论 <span class="req">*</span></label>
+          <div class="select-wrap" id="rd-work-edit-conclusion-wrap">
+            <button type="button" class="field-select" id="rd-work-edit-conclusion-btn">
+              <span class="select-text placeholder" id="rd-work-edit-conclusion-text" data-placeholder="请选择">请选择</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="select-menu" id="rd-work-edit-conclusion-menu" hidden></div>
+            <input type="hidden" id="rd-work-edit-conclusion" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="rd-work-edit-report">测试报告 <span class="req">*</span></label>
+          <input class="field-input" id="rd-work-edit-report" type="url" placeholder="https://" required />
+        </div>
+        <div class="field">
+          <label class="field-label" for="rd-work-edit-note">测试备注</label>
+          <textarea class="field-input rd-submit-note" id="rd-work-edit-note" rows="3" placeholder="填写测试备注"></textarea>
+        </div>
+        <input type="hidden" id="rd-work-edit-req-id" />
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <button type="button" class="btn-secondary" id="rd-work-edit-cancel">取消</button>
+        <button type="button" class="btn-primary" id="rd-work-edit-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260727rd8"></script>
+  <script src="rd-workspace-detail.js?v=20260727rd14"></script>
 </body>
 </html>

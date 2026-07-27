@@ -25,18 +25,21 @@ function statusBadge(status) {
   const cls =
     status === "已完成"
       ? "iter-phase-badge is-done"
-      : status === "进行中"
-        ? "iter-phase-badge is-running"
-        : status === "已超期"
-          ? "iter-phase-badge is-overdue"
-          : status === "部分完成"
-            ? "iter-phase-badge is-partial"
-            : "iter-phase-badge is-pending";
-  return `<span class="${cls}">${escapeHtml(status)}</span>`;
+      : status === "超期完成"
+        ? "iter-phase-badge is-done-late"
+        : status === "进行中"
+          ? "iter-phase-badge is-running"
+          : status === "已超期"
+            ? "iter-phase-badge is-overdue"
+            : status === "部分完成"
+              ? "iter-phase-badge is-partial"
+              : "iter-phase-badge is-pending";
+  return `<span class="${cls}">${escapeHtml(displayRdWorkStatus(status))}</span>`;
 }
 
 function statusSortValue(status) {
-  const idx = STATUS_ORDER.indexOf(status);
+  const key = status === "超期完成" ? "已完成" : status;
+  const idx = STATUS_ORDER.indexOf(key);
   return idx < 0 ? 999 : idx;
 }
 
@@ -96,9 +99,15 @@ function getFiltered() {
   const q = state.search.trim().toLowerCase();
   const rows = ITERATIONS.map(getRow).filter((row) => {
     if (state.product !== "全部" && row.product !== state.product) return false;
-    if (state.devStatus !== "全部" && row.devStatus !== state.devStatus) return false;
-    if (state.testStatus !== "全部" && row.testStatus !== state.testStatus) return false;
-    if (state.hideDone && row.devStatus === "已完成" && row.testStatus === "已完成") return false;
+    if (!matchRdWorkStatusFilter(row.devStatus, state.devStatus)) return false;
+    if (!matchRdWorkStatusFilter(row.testStatus, state.testStatus)) return false;
+    if (
+      state.hideDone &&
+      (row.devStatus === "已完成" || row.devStatus === "超期完成") &&
+      (row.testStatus === "已完成" || row.testStatus === "超期完成")
+    ) {
+      return false;
+    }
     if (q && !String(row.name).toLowerCase().includes(q)) return false;
     return true;
   });
@@ -179,7 +188,7 @@ function renderTable() {
         <td class="td-rd-num">${row.bugCount}</td>
         <td class="td-rd-num">${row.gerritAdd}</td>
         <td class="td-rd-num">${row.gerritDel}</td>
-        <td class="td-rd-num">${row.diRate}%</td>
+        <td class="td-rd-num">${row.diRate != null ? `${row.diRate}%` : "-"}</td>
       </tr>`;
     })
     .join("");
