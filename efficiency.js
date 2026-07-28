@@ -77,6 +77,18 @@ function feedbackSummaryCell(row) {
     </div>`;
 }
 
+function followUpNoteCell(row) {
+  const text = (row.followUpNote && String(row.followUpNote).trim()) || "";
+  const summary = text ? text.split("\n")[0] : "";
+  const empty = !summary;
+  return `
+    <div class="eff-followup-cell" data-id="${row.id}">
+      <button type="button" class="eff-followup-trigger ${empty ? "is-empty" : ""}" title="${escapeHtml(summary || "点击填写跟进说明")}">
+        ${empty ? "点击填写" : escapeHtml(summary)}
+      </button>
+    </div>`;
+}
+
 function formatFeedbackContent(content) {
   return escapeHtml(content || "")
     .split("\n")
@@ -259,6 +271,7 @@ function renderTable() {
         <div class="td w-160">${linkOrDash(r.aiDemoUrl)}</div>
         <div class="td w-110">${textOrDash(r.aiDemoDuration)}</div>
         <div class="td w-160">${trackLinkCell(r)}</div>
+        <div class="td w-180">${followUpNoteCell(r)}</div>
       </div>`;
     })
     .join("");
@@ -474,6 +487,31 @@ function finishTrackEdit(cell, save) {
   render();
 }
 
+let followUpEditId = null;
+
+function openFollowUpModal(id) {
+  const row = REQUIREMENTS.find((r) => r.id === Number(id));
+  if (!row) return;
+  followUpEditId = row.id;
+  document.getElementById("eff-followup-req-title").textContent = row.title;
+  document.getElementById("eff-followup-content").value = row.followUpNote || "";
+  document.getElementById("eff-followup-modal").hidden = false;
+  setTimeout(() => document.getElementById("eff-followup-content").focus(), 0);
+}
+
+function closeFollowUpModal() {
+  document.getElementById("eff-followup-modal").hidden = true;
+  followUpEditId = null;
+}
+
+function saveFollowUpModal() {
+  const row = REQUIREMENTS.find((r) => r.id === Number(followUpEditId));
+  if (!row) return;
+  row.followUpNote = document.getElementById("eff-followup-content").value.trim();
+  closeFollowUpModal();
+  render();
+}
+
 function init() {
   setupDropdown(
     "eff-product-filter-btn",
@@ -546,6 +584,13 @@ function init() {
       return;
     }
 
+    const followUp = e.target.closest(".eff-followup-cell");
+    if (followUp) {
+      e.preventDefault();
+      openFollowUpModal(followUp.dataset.id);
+      return;
+    }
+
     const editBtn = e.target.closest(".eff-track-edit-btn");
     if (editBtn) {
       e.preventDefault();
@@ -575,6 +620,13 @@ function init() {
     if (feedbackCell) {
       e.preventDefault();
       openFeedbackModal(feedbackCell.dataset.id);
+      return;
+    }
+
+    const followUpCell = e.target.closest(".eff-followup-cell");
+    if (followUpCell) {
+      e.preventDefault();
+      openFollowUpModal(followUpCell.dataset.id);
       return;
     }
 
@@ -623,13 +675,21 @@ function init() {
   // 「添加反馈」暂不可用，保留按钮样式占位
   document.getElementById("eff-feedback-add").disabled = true;
 
+  document.getElementById("eff-followup-close").addEventListener("click", closeFollowUpModal);
+  document.getElementById("eff-followup-cancel").addEventListener("click", closeFollowUpModal);
+  document.getElementById("eff-followup-save").addEventListener("click", saveFollowUpModal);
+  document.getElementById("eff-followup-modal").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeFollowUpModal();
+  });
+
   document.addEventListener("click", () => {
     document.querySelectorAll(".dropdown").forEach((d) => (d.hidden = true));
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!document.getElementById("eff-feedback-modal").hidden) closeFeedbackModal();
+    if (!document.getElementById("eff-followup-modal").hidden) closeFollowUpModal();
+    else if (!document.getElementById("eff-feedback-modal").hidden) closeFeedbackModal();
     else if (!document.getElementById("eff-progress-modal").hidden) closeProgressModal();
   });
 

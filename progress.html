@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI提效进展</title>
-  <link rel="stylesheet" href="styles.css?v=20260723ae" />
+  <link rel="stylesheet" href="styles.css?v=20260728p" />
 </head>
 <body>
   <div class="page progress-page">
@@ -22,15 +22,15 @@
       <div class="progress-title-row">
         <h1>AI提效进展</h1>
         <div class="view-toggle" id="progress-tab-toggle" role="group" aria-label="进展视图切换">
-          <button type="button" class="toggle-btn active" data-tab="week">周进展视图</button>
-          <button type="button" class="toggle-btn" data-tab="overall" disabled title="暂未开放">整体进展视图</button>
+          <button type="button" class="toggle-btn active" data-tab="req">按需求</button>
+          <button type="button" class="toggle-btn" data-tab="deliverable">按交付物</button>
         </div>
       </div>
-      <p>追踪AI需求每周更新与整体迭代分布</p>
+      <p>按周查看 AI 提效进展：按需求看全貌与跟进，按交付物看产出物更新切片</p>
     </header>
 
-    <section class="progress-view" id="progress-week-view">
-      <div class="progress-controls">
+    <div class="progress-controls">
+      <div class="progress-controls-left">
         <div class="week-selector" id="week-selector">
           <button type="button" class="week-nav-btn" id="week-prev" aria-label="上一周">←</button>
           <button type="button" class="week-label-btn" id="week-label-btn" aria-haspopup="listbox" aria-expanded="false">
@@ -40,32 +40,37 @@
           <button type="button" class="week-nav-btn" id="week-next" aria-label="下一周">→</button>
           <div class="dropdown week-dropdown" id="week-dropdown" hidden role="listbox"></div>
         </div>
-        <div class="progress-summary-badge" id="week-summary">本周共更新 0 项，涉及 0 个需求</div>
+        <div class="progress-week-summary" id="week-summary">本周变更 0 项，涉及 0 项需求</div>
       </div>
+      <div class="progress-controls-right">
+        <div class="progress-status-legend" id="progress-status-legend" hidden>
+          <span class="progress-legend-item"><i class="progress-swatch is-add"></i>新增</span>
+          <span class="progress-legend-item"><i class="progress-swatch is-update"></i>更新</span>
+        </div>
+      </div>
+    </div>
 
-      <div class="progress-sections" id="week-sections"></div>
+    <section class="progress-view" id="progress-req-view">
+      <div class="progress-req-table-outer">
+        <div class="progress-req-table-wrap">
+          <div class="progress-req-header">
+            <div class="pth col-req-title">需求名称</div>
+            <div class="pth col-req-product">所属产品</div>
+            <div class="pth col-req-status">进展状态</div>
+            <div class="pth col-req-prd">AI PRD</div>
+            <div class="pth col-req-feedback">研发反馈</div>
+            <div class="pth col-req-demo">AI Demo</div>
+            <div class="pth col-req-duration">Demo时长</div>
+            <div class="pth col-req-track">AI埋点</div>
+            <div class="pth col-req-followup">跟进说明</div>
+          </div>
+          <div class="progress-req-body" id="progress-req-tbody"></div>
+        </div>
+      </div>
     </section>
 
-    <section class="progress-view" id="progress-overall-view" hidden>
-      <div class="progress-section-card" id="overall-list-wrap">
-        <div class="progress-section-header">
-          <div class="progress-section-title">
-            <span class="progress-dot"></span>
-            <span>按迭代分布</span>
-          </div>
-          <span class="progress-count-badge" id="overall-count">0 条需求</span>
-        </div>
-        <div class="progress-table-wrap">
-          <div class="progress-table-header progress-overall-row">
-            <div class="pth col-iter">迭代代号</div>
-            <div class="pth col-num">需求数</div>
-            <div class="pth col-num">含 AI PRD</div>
-            <div class="pth col-num">含 AI Demo</div>
-            <div class="pth col-num">含 AI 埋点</div>
-          </div>
-          <div class="progress-table-body" id="overall-tbody"></div>
-        </div>
-      </div>
+    <section class="progress-view" id="progress-deliverable-view" hidden>
+      <div class="progress-sections" id="week-sections"></div>
     </section>
   </div>
 
@@ -91,7 +96,31 @@
     </div>
   </div>
 
-  <script src="data.js?v=20260720y"></script>
-  <script src="progress.js?v=20260720y"></script>
+  <div class="modal-overlay" id="progress-followup-modal" hidden>
+    <div class="modal eff-feedback-modal weekly-note-modal" role="dialog" aria-modal="true" aria-labelledby="progress-followup-title">
+      <div class="modal-header">
+        <h2 id="progress-followup-title">跟进说明</h2>
+        <button class="modal-close" id="progress-followup-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="progress-followup-req-title"></strong>
+      </div>
+      <div class="modal-body weekly-note-body">
+        <div class="field">
+          <label class="field-label" for="progress-followup-content">跟进说明</label>
+          <textarea class="field-textarea" id="progress-followup-content" rows="6" placeholder="记录周会结论、处理动作、责任人等"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="progress-followup-cancel">取消</button>
+        <button type="button" class="btn-primary" id="progress-followup-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260728a"></script>
+  <script src="progress.js?v=20260728o"></script>
 </body>
 </html>

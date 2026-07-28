@@ -915,6 +915,18 @@ REQUIREMENTS.forEach((row) => {
       const feedbacks = ["", "缺少边界case描述", "", "建议补充性能指标", "", "接口文档待补充", ""];
       row.aiPrdFeedback = feedbacks[row.id % feedbacks.length];
     }
+    if (row.followUpNote === undefined) {
+      const notes = [
+        "",
+        "已采纳边界 case 补充，PRD 本周改完",
+        "",
+        "Demo 时长偏长，拆成两轮演示",
+        "",
+        "埋点方案待与数据同学对齐",
+        "暂不跟进，优先级下调",
+      ];
+      row.followUpNote = notes[row.id % notes.length];
+    }
     seedAiPrdFeedbacks(row);
     return;
   }
@@ -948,6 +960,18 @@ REQUIREMENTS.forEach((row) => {
   if (row.aiPrdFeedback === undefined) {
     const feedbacks = ["", "缺少边界case描述", "", "建议补充性能指标", "", "接口文档待补充", ""];
     row.aiPrdFeedback = feedbacks[row.id % feedbacks.length];
+  }
+  if (row.followUpNote === undefined) {
+    const notes = [
+      "",
+      "已采纳边界 case 补充，PRD 本周改完",
+      "",
+      "Demo 时长偏长，拆成两轮演示",
+      "",
+      "埋点方案待与数据同学对齐",
+      "暂不跟进，优先级下调",
+    ];
+    row.followUpNote = notes[row.id % notes.length];
   }
   seedAiPrdFeedbacks(row);
 

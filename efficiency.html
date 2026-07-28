@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 提效看板</title>
-  <link rel="stylesheet" href="styles.css?v=20260723ae" />
+  <link rel="stylesheet" href="styles.css?v=20260728a" />
 </head>
 <body>
   <div class="page efficiency-page">
@@ -69,6 +69,7 @@
           <div class="th w-160">AI Demo链接</div>
           <div class="th w-110 sortable" data-key="aiDemoDuration">Demo时长估计 <img src="assets/icons/arrow-down.svg" alt="" /></div>
           <div class="th w-160">AI埋点链接</div>
+          <div class="th w-180">跟进说明</div>
         </div>
         <div class="table-body" id="efficiency-tbody"></div>
       </div>
@@ -149,7 +150,36 @@
     </div>
   </div>
 
-  <script src="data.js?v=20260720k"></script>
-  <script src="efficiency.js?v=20260720e"></script>
+  <div class="modal-overlay" id="eff-followup-modal" hidden>
+    <div class="modal eff-feedback-modal weekly-note-modal" role="dialog" aria-modal="true" aria-labelledby="eff-followup-title">
+      <div class="modal-header">
+        <h2 id="eff-followup-title">跟进说明</h2>
+        <button class="modal-close" id="eff-followup-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="eff-feedback-context">
+        需求：<strong id="eff-followup-req-title"></strong>
+      </div>
+      <div class="modal-body weekly-note-body">
+        <div class="field">
+          <label class="field-label" for="eff-followup-content">跟进说明</label>
+          <textarea
+            class="field-textarea"
+            id="eff-followup-content"
+            rows="6"
+            placeholder="记录处理结论、下一步动作、责任人等，可用于 AI PRD / Demo / 埋点等任意跟进闭环"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="eff-followup-cancel">取消</button>
+        <button type="button" class="btn-primary" id="eff-followup-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260728a"></script>
+  <script src="efficiency.js?v=20260728a"></script>
 </body>
 </html>
