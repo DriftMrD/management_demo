@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>版本管理平台</title>
+  <link rel="stylesheet" href="styles.css?v=20260728fb1" />
+</head>
+<body>
+  <div class="home-shell">
+    <aside class="home-sidebar" id="home-sidebar" aria-label="项目管理导航">
+      <div class="home-sidebar-top">
+        <a class="home-sidebar-title" href="index.html">项目管理</a>
+        <button type="button" class="home-collapse-btn" id="home-collapse-btn" aria-label="收起导航" aria-expanded="true">
+          <img src="assets/icons/chevron-down.svg" alt="" class="home-collapse-icon" />
+        </button>
+      </div>
+      <nav class="home-sidebar-nav">
+        <a class="home-nav-item" href="requirements.html">需求管理系统</a>
+        <a class="home-nav-item" href="iteration.html">迭代管理系统</a>
+        <a class="home-nav-item active" href="version.html">版本管理平台</a>
+      </nav>
+    </aside>
+
+    <div class="home-main-panel">
+      <header class="home-main-header">
+        <nav class="breadcrumb home-breadcrumb">
+          <a class="crumb crumb-link" href="index.html">项目管理</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <span class="crumb current">版本管理平台</span>
+        </nav>
+        <div class="home-intro">
+          <h1>版本管理平台</h1>
+          <p>按产品沉淀发布版本与用户反馈，支持洞察复盘与一键转需求</p>
+        </div>
+      </header>
+
+      <main class="home-main-body">
+        <h2 class="home-section-label">系统功能模块</h2>
+        <section class="home-module-row" aria-label="功能模块">
+          <a class="home-module-card" href="feedback.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/list.svg" alt="" />
+                <h3>用户反馈</h3>
+              </div>
+              <p>收集、处理、归纳并追踪全渠道的用户真实原声及产品体验问题</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="feedback-count-badge">0条周报</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="feedback-data.js?v=20260728fb1"></script>
+  <script>
+    document.getElementById("feedback-count-badge").textContent = `${FEEDBACK_WEEKS.length}条周报`;
+
+    const sidebar = document.getElementById("home-sidebar");
+    const collapseBtn = document.getElementById("home-collapse-btn");
+    collapseBtn.addEventListener("click", () => {
+      const collapsed = sidebar.classList.toggle("collapsed");
+      collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+      collapseBtn.setAttribute("aria-label", collapsed ? "展开导航" : "收起导航");
+    });
+  </script>
+</body>
+</html>

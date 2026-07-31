@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户反馈周报</title>
+  <link rel="stylesheet" href="styles.css?v=20260731fb6" />
+</head>
+<body>
+  <div class="home-shell feedback-shell">
+    <aside class="home-sidebar" id="home-sidebar" aria-label="项目管理导航">
+      <div class="home-sidebar-top">
+        <a class="home-sidebar-title" href="index.html">项目管理</a>
+        <button type="button" class="home-collapse-btn" id="home-collapse-btn" aria-label="收起导航" aria-expanded="true">
+          <img src="assets/icons/chevron-down.svg" alt="" class="home-collapse-icon" />
+        </button>
+      </div>
+      <nav class="home-sidebar-nav">
+        <a class="home-nav-item" href="requirements.html">需求管理系统</a>
+        <a class="home-nav-item" href="iteration.html">迭代管理系统</a>
+        <a class="home-nav-item active" href="version.html">版本管理平台</a>
+      </nav>
+    </aside>
+
+    <div class="home-main-panel feedback-main">
+      <header class="feedback-page-header fb-week-header">
+        <nav class="breadcrumb" id="fb-week-breadcrumb" aria-label="面包屑"></nav>
+        <div class="title-row">
+          <div class="title-left">
+            <h1 id="fb-week-title">用户反馈周报</h1>
+            <p id="fb-week-sub"></p>
+          </div>
+          <div class="fb-week-actions">
+            <button type="button" class="btn-primary" id="fb-week-download">
+              <img src="assets/icons/download.svg" alt="" />
+              <span>下载原始CSV</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="feedback-body fb-week-body" id="fb-week-body">
+        <div class="feedback-empty">正在加载周报…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="feedback-toast" hidden role="status"></div>
+
+  <!-- 新建需求弹窗（从用户反馈转入） -->
+  <div class="modal-overlay" id="fb-create-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fb-modal-title">
+      <div class="modal-header">
+        <h2 id="fb-modal-title">新建需求</h2>
+        <button class="modal-close" id="fb-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+
+      <form class="modal-body" id="fb-create-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>需求名称</label>
+          <input class="field-input" id="fb-f-title" type="text" placeholder="请输入需求名称" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label">需求详情</label>
+          <textarea class="field-textarea" id="fb-f-detail" placeholder="请输入需求背景、用户诉求、落地价值、具体需求内容..."></textarea>
+          <label class="fb-voice-keep" for="fb-f-keep-voice">
+            <input type="checkbox" class="fb-voice-keep-check" id="fb-f-keep-voice" checked />
+            <span class="fb-voice-keep-box" aria-hidden="true"></span>
+            <span class="fb-voice-keep-text">在需求详情中保留用户原声证据</span>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>所属产品</label>
+            <div class="select-wrap" data-select="product">
+              <button type="button" class="field-select" id="fb-f-product-btn">
+                <span class="select-text placeholder" id="fb-f-product-text">请选择所属产品</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="fb-f-product" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>产品负责人</label>
+            <div class="select-wrap" data-select="owner">
+              <button type="button" class="field-select" id="fb-f-owner-btn">
+                <span class="select-text placeholder" id="fb-f-owner-text">请选择产品负责人</span>
+                <img src="assets/icons/user.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="fb-f-owner" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>进展状态</label>
+            <div class="select-wrap" data-select="status">
+              <button type="button" class="field-select" id="fb-f-status-btn">
+                <span class="select-text" id="fb-f-status-text">未启动</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="fb-f-status" value="未启动" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>优先级</label>
+            <div class="select-wrap" data-select="priority">
+              <button type="button" class="field-select" id="fb-f-priority-btn">
+                <span class="select-text placeholder" id="fb-f-priority-text">请选择优先级 (P0/P1/P2)</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" hidden></div>
+              <input type="hidden" id="fb-f-priority" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地类型</label>
+            <div class="radio-group" id="fb-f-type-group">
+              <label class="radio-item">
+                <input type="radio" name="fb-f-type" value="敏捷迭代" />
+                <span class="radio-dot"></span>
+                <span>敏捷迭代</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="fb-f-type" value="TOS版本" />
+                <span class="radio-dot"></span>
+                <span>TOS版本</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>落地版本</label>
+            <input class="field-input" id="fb-f-version" type="text" placeholder="请输入落地版本，如 16.3" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否是价值点需求</label>
+            <div class="radio-group" id="fb-f-value-group">
+              <label class="radio-item">
+                <input type="radio" name="fb-f-value" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="fb-f-value" value="false" />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>是否需要数据分析</label>
+            <div class="radio-group" id="fb-f-analytics-group">
+              <label class="radio-item">
+                <input type="radio" name="fb-f-analytics" value="true" />
+                <span class="radio-dot"></span>
+                <span>是</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="fb-f-analytics" value="false" />
+                <span class="radio-dot"></span>
+                <span>否</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>需求提出日期</label>
+            <div class="date-wrap">
+              <input class="field-input" id="fb-f-request-date" type="date" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><span class="req">*</span>目标交付月</label>
+            <div class="date-wrap">
+              <input class="field-input" id="fb-f-deliver-month" type="month" required />
+              <img class="date-icon" src="assets/icons/calendar.svg" alt="" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">相关附件</label>
+          <div class="upload-box" id="fb-upload-box">
+            <img src="assets/icons/upload.svg" alt="" />
+            <p>点击或拖拽上传文件</p>
+            <input type="file" id="fb-f-file" hidden multiple />
+          </div>
+          <ul class="upload-list" id="fb-upload-list"></ul>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="fb-modal-cancel">取消</button>
+        <button type="submit" form="fb-create-form" class="btn-primary" id="fb-modal-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="feedback-data.js?v=20260731fb4"></script>
+  <script src="feedback-week.js?v=20260731fb4"></script>
+</body>
+</html>

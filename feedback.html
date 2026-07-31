@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户反馈</title>
+  <link rel="stylesheet" href="styles.css?v=20260731fb1" />
+</head>
+<body>
+  <div class="home-shell feedback-shell">
+    <aside class="home-sidebar" id="home-sidebar" aria-label="项目管理导航">
+      <div class="home-sidebar-top">
+        <a class="home-sidebar-title" href="index.html">项目管理</a>
+        <button type="button" class="home-collapse-btn" id="home-collapse-btn" aria-label="收起导航" aria-expanded="true">
+          <img src="assets/icons/chevron-down.svg" alt="" class="home-collapse-icon" />
+        </button>
+      </div>
+      <nav class="home-sidebar-nav">
+        <a class="home-nav-item" href="requirements.html">需求管理系统</a>
+        <a class="home-nav-item" href="iteration.html">迭代管理系统</a>
+        <a class="home-nav-item active" href="version.html">版本管理平台</a>
+      </nav>
+    </aside>
+
+    <div class="home-main-panel feedback-main">
+      <header class="feedback-page-header">
+        <nav class="breadcrumb">
+          <a class="crumb crumb-link" href="index.html">项目管理</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <a class="crumb crumb-link" href="version.html">版本管理平台</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <span class="crumb current">用户反馈</span>
+        </nav>
+
+        <div class="title-row">
+          <div class="title-left">
+            <h1>用户反馈</h1>
+            <p>收集、处理、归纳并追踪全渠道的用户真实原声及产品体验问题</p>
+          </div>
+          <div class="filter-btn-wrap feedback-product-filter">
+            <button class="filter-btn feedback-product-btn" id="feedback-product-btn" type="button">
+              <span><b id="feedback-product-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="feedback-product-dropdown" hidden></div>
+          </div>
+        </div>
+      </header>
+
+      <div class="feedback-body">
+        <section class="feedback-pane" id="pane-week">
+          <div class="feedback-table-card">
+            <div class="feedback-table-scroll">
+              <div class="feedback-table-header feedback-week-header">
+                <div class="fb-th fb-w-period">周期</div>
+                <div class="fb-th fb-w-product">产品</div>
+                <div class="fb-th fb-w-num">反馈总量</div>
+                <div class="fb-th fb-w-num">有效总量</div>
+                <div class="fb-th fb-w-sent">
+                  <span class="sent-neg">负面</span>
+                  <span class="sent-sep">/</span>
+                  <span class="sent-demand">需求</span>
+                  <span class="sent-sep">/</span>
+                  <span class="sent-pos">正面</span>
+                </div>
+                <div class="fb-th fb-w-gp">GP</div>
+                <div class="fb-th fb-w-cms">CMS</div>
+                <div class="fb-th fb-w-issue">核心问题</div>
+                <div class="fb-th fb-w-action">操作</div>
+              </div>
+              <div class="feedback-table-body" id="week-table-body"></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="pagination-bar feedback-pagination-bar">
+          <span id="feedback-total-count">共 0 条反馈周期记录</span>
+          <div class="pagination" id="feedback-pagination"></div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="feedback-toast" hidden role="status"></div>
+
+  <script src="feedback-data.js?v=20260731fb1"></script>
+  <script src="feedback.js?v=20260731fb1"></script>
+</body>
+</html>

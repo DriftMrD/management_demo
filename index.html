@@ -15,7 +15,7 @@
         </nav>
         <div class="home-intro">
           <h1>项目管理</h1>
-          <p>统一入口管理需求与迭代，覆盖需求全生命周期与迭代排期可视化</p>
+          <p>统一入口管理需求、迭代与版本反馈，覆盖需求全生命周期与迭代排期可视化</p>
         </div>
       </header>
 
@@ -49,15 +49,31 @@
               <span class="home-module-enter">进入系统 &gt;</span>
             </div>
           </a>
+
+          <a class="home-module-card" href="version.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/package.svg" alt="" />
+                <h3>版本管理平台</h3>
+              </div>
+              <p>按产品沉淀发布版本与用户反馈，支持洞察复盘与一键转需求</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="version-system-badge">0条周报</span>
+              <span class="home-module-enter">进入系统 &gt;</span>
+            </div>
+          </a>
         </section>
       </main>
     </div>
   </div>
 
   <script src="data.js?v=20260720ag"></script>
+  <script src="feedback-data.js?v=20260728fb1"></script>
   <script>
     document.getElementById("req-system-badge").textContent = `${getPoolRows().length}条需求`;
     document.getElementById("iter-system-badge").textContent = `${ITERATIONS.length}个迭代`;
+    document.getElementById("version-system-badge").textContent = `${FEEDBACK_WEEKS.length}条周报`;
   </script>
 </body>
 </html>
