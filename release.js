@@ -65,32 +65,41 @@
     return "is-zero";
   }
 
-  function isFullGray(row) {
-    return row && row.grayPercent != null && Number(row.grayPercent) >= 100;
+  function isFullGray(row, channel) {
+    if (!row) return false;
+    if (channel) return typeof isChannelGrayFull === "function" && isChannelGrayFull(row, channel);
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    if (!grays.length) return row.grayPercent != null && Number(row.grayPercent) >= 100;
+    return grays.every((g) => g.value >= channelGrayMax(g.channel));
   }
 
   function renderGrayCell(row) {
-    if (row.status === "不涉及" || row.grayPercent == null) {
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    if (row.status === "不涉及" || !grays.length) {
       return `<span class="rv-empty">—</span>`;
     }
-    const pct = Math.max(0, Math.min(100, Number(row.grayPercent) || 0));
-    const label = pct >= 100 ? "全量" : `${pct}%`;
-    const editBtn =
-      pct >= 100
-        ? ""
-        : `<button type="button" class="rv-gray-edit-btn" data-action="gray-edit" data-id="${escapeHtml(row.id)}" title="调整灰度" aria-label="调整灰度">
+    return `<div class="rv-gray-stack">${grays
+      .map((g) => {
+        const ratio = channelGrayRatio(g.channel, g.value);
+        const label = formatChannelGray(g.channel, g.value);
+        const full = g.value >= channelGrayMax(g.channel);
+        const ch = escapeHtml(g.channel);
+        const editBtn = full
+          ? ""
+          : `<button type="button" class="rv-gray-edit-btn" data-action="gray-edit" data-id="${escapeHtml(row.id)}" data-channel="${ch}" title="调整 ${ch} 灰度" aria-label="调整 ${ch} 灰度">
           <img src="assets/icons/pencil.svg" alt="" />
         </button>`;
-    return `
-      <div class="rv-gray-cell${pct >= 100 ? " is-full-locked" : ""}" data-gray-id="${escapeHtml(row.id)}">
-        <div class="rv-progress ${grayTone(pct)}">
+        return `<div class="rv-gray-cell${full ? " is-full-locked" : ""}" data-gray-id="${escapeHtml(row.id)}" data-channel="${ch}">
+        <div class="rv-progress is-${g.channel.toLowerCase()} ${grayTone(ratio)}">
           <div class="rv-progress-track">
-            <div class="rv-progress-fill" style="width:${pct}%"></div>
+            <div class="rv-progress-fill" style="width:${ratio}%"></div>
           </div>
           <span class="rv-progress-label">${escapeHtml(label)}</span>
         </div>
         ${editBtn}
       </div>`;
+      })
+      .join("")}</div>`;
   }
 
   function shuttleSortValue(name) {
@@ -103,7 +112,11 @@
 
   function getSortValue(row, key) {
     if (key === "shuttle") return shuttleSortValue(row.shuttle);
-    if (key === "grayPercent") return row.grayPercent == null ? null : Number(row.grayPercent);
+    if (key === "grayPercent") {
+      const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+      if (!grays.length) return row.grayPercent == null ? null : Number(row.grayPercent);
+      return Math.max(...grays.map((g) => channelGrayRatio(g.channel, g.value)));
+    }
     if (key === "releaseTime") return row.releaseTime || null;
     return null;
   }
@@ -219,7 +232,12 @@
           </a>
         </div>
         <div class="fb-td rv-w-action">
-          <button type="button" class="fb-link-btn" data-action="view" data-id="${escapeHtml(r.id)}">查看</button>
+          <button type="button" class="rv-action-icon" data-action="view" data-id="${escapeHtml(r.id)}" title="查看" aria-label="查看">
+            <img src="assets/icons/eye.svg" alt="" />
+          </button>
+          <button type="button" class="rv-action-icon" data-action="remind" data-id="${escapeHtml(r.id)}" title="提醒" aria-label="提醒">
+            <img src="assets/icons/remind.svg" alt="" />
+          </button>
         </div>
       </div>`
       )
@@ -269,6 +287,7 @@
   }
 
   function parseChannels(value) {
+    if (typeof listReleaseChannels === "function") return listReleaseChannels(value);
     if (Array.isArray(value)) return value.filter(Boolean);
     return String(value || "")
       .split(/[,/|，、\s]+/)
@@ -317,6 +336,11 @@
       placeholder: "不涉及",
       options: () => ["不涉及", "计划中", "已发布"],
       label: (v) => v || "不涉及",
+    },
+    product: {
+      placeholder: "请选择产品",
+      options: () => (typeof getReleaseProductOptions === "function" ? getReleaseProductOptions() : []),
+      label: (v) => v || "请选择产品",
     },
   };
 
@@ -389,7 +413,7 @@
           renderPlanSelectMenu(wrap);
           return;
         }
-        setPlanSelect(key, item.dataset.value, meta.placeholder);
+        setPlanSelect(key, item.dataset.value, meta.placeholder, scope);
         if (key === "status") syncPlanningRequired(item.dataset.value);
         menu.hidden = true;
       });
@@ -438,7 +462,7 @@
   }
 
   function anyModalOpen() {
-    return ["release-detail-modal", "release-edit-modal", "release-gray-modal"].some(
+    return ["release-detail-modal", "release-edit-modal", "release-gray-modal", "release-create-modal"].some(
       (id) => !document.getElementById(id).hidden
     );
   }
@@ -479,51 +503,234 @@
     if (!anyModalOpen()) document.body.classList.remove("modal-open");
   }
 
-  function buildTimelineNodes(row) {
-    const nodes = (row.timeline || []).map((t) => ({ ...t }));
-    const hasFull = nodes.some((n) => Number(n.percent) >= 100);
-    if (!hasFull && row.status !== "不涉及") {
+  function channelGrayPill(channel, value) {
+    const ch = String(channel || "").toUpperCase();
+    return `<span class="rv-channel-pill is-${escapeHtml(ch.toLowerCase())}">${escapeHtml(ch)} ${escapeHtml(formatChannelGray(ch, value))}</span>`;
+  }
+
+  function isPlanTimelineNode(n) {
+    if (!n || n.pending || n.channel) return false;
+    if (n.note === "进入计划中") return true;
+    return Number(n.percent) === 0 && (n.value == null || Number(n.value) === 0);
+  }
+
+  function shiftTimelineDate(iso, days) {
+    if (!iso) return "";
+    if (typeof addDaysISO === "function") return addDaysISO(iso, days);
+    const d = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return iso;
+    d.setDate(d.getDate() + days);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  function staggerPackedTimeline(nodes) {
+    const active = nodes.filter((n) => !n.pending && n.date);
+    if (active.length < 2) return;
+    const dates = new Set(active.map((n) => n.date));
+    if (dates.size > 1) return;
+    const base = active[0].date;
+    const last = active.length - 1;
+    active.forEach((n, i) => {
+      n.date = shiftTimelineDate(base, -4 * (last - i));
+    });
+  }
+
+  function insertMissingGraySteps(nodes) {
+    const extras = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const cur = nodes[i];
+      const next = nodes[i + 1];
+      if (!next || cur.pending || next.pending || next.channel !== "GP") continue;
+      const nextVal = Number(next.value);
+      if (cur.plan && nextVal >= 70) {
+        extras.push({
+          at: i + 1,
+          nodes: [
+            { date: shiftTimelineDate(next.date, -8), channel: "GP", value: 10, percent: 10 },
+            { date: shiftTimelineDate(next.date, -4), channel: "GP", value: 35, percent: 35 },
+          ],
+        });
+      } else if (cur.channel === "GP" && Number(cur.value) <= 15 && nextVal >= 90) {
+        extras.push({
+          at: i + 1,
+          nodes: [
+            { date: shiftTimelineDate(next.date, -4), channel: "GP", value: 35, percent: 35 },
+            { date: shiftTimelineDate(next.date, -2), channel: "GP", value: 70, percent: 70 },
+          ],
+        });
+      }
+    }
+    extras.reverse().forEach((item) => {
+      nodes.splice(item.at, 0, ...item.nodes);
+    });
+  }
+
+  function inferOrphanTimelineChannel(n, grays) {
+    if (!grays.length) return "";
+    const pct = Number(n.percent);
+    const percentChannels = grays.filter((g) => channelGrayKind(g.channel) === "percent");
+    const exact = percentChannels.find((g) => g.value === pct);
+    if (exact) return exact.channel;
+    const covering = percentChannels.find((g) => g.value >= pct);
+    if (covering) return covering.channel;
+    if (percentChannels[0]) return percentChannels[0].channel;
+    return grays[0].channel;
+  }
+
+  function prepareTimelineNodes(row) {
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    const nodes = [];
+    (row.timeline || []).forEach((item) => {
+      const n = { ...item };
+      if (n.pending) return;
+      if (isPlanTimelineNode(n)) {
+        nodes.push({ ...n, plan: true, channel: "", percent: 0, note: n.note || "进入计划中" });
+        return;
+      }
+      if (n.channel) {
+        nodes.push({
+          ...n,
+          value: n.value != null ? n.value : n.percent,
+        });
+        return;
+      }
+      const ch = inferOrphanTimelineChannel(n, grays);
+      if (!ch) {
+        nodes.push({ ...n, plan: Number(n.percent) === 0 });
+        return;
+      }
+      const value = n.value != null ? n.value : Number(n.percent);
+      nodes.push({
+        ...n,
+        channel: ch,
+        value,
+        percent: channelGrayRatio(ch, value),
+      });
+    });
+
+    const lastDate = [...nodes].reverse().find((n) => n.date)?.date || row.rolloutTime || row.releaseTime || "";
+    grays.forEach((g) => {
+      if (g.value <= 0) return;
+      const exists = nodes.some((n) => n.channel === g.channel && Number(n.value) === Number(g.value));
+      if (exists) return;
+      nodes.push({
+        date: lastDate,
+        channel: g.channel,
+        value: g.value,
+        percent: channelGrayRatio(g.channel, g.value),
+        note: g.value >= channelGrayMax(g.channel) ? `${g.channel} 全量` : `${g.channel} 当前灰度`,
+      });
+    });
+
+    staggerPackedTimeline(nodes);
+    insertMissingGraySteps(nodes);
+
+    const allFull = grays.length
+      ? grays.every((g) => g.value >= channelGrayMax(g.channel))
+      : nodes.some((n) => !n.plan && Number(n.percent) >= 100);
+    if (!allFull && row.status !== "不涉及") {
       nodes.push({ date: "", percent: 100, note: "全量", pending: true });
     }
+
+    let currentIdx = nodes.findIndex((n) => n.current && !n.pending);
+    if (currentIdx < 0) {
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        if (!nodes[i].pending) {
+          currentIdx = i;
+          break;
+        }
+      }
+    }
+    nodes.forEach((n, i) => {
+      n.current = i === currentIdx && !n.pending;
+    });
+    return { nodes, grays };
+  }
+
+  function groupTimelineByDate(nodes, grays) {
+    const groups = [];
+    const index = new Map();
+    nodes.forEach((n) => {
+      const key = n.pending ? "__pending__" : n.date || "—";
+      if (!index.has(key)) {
+        const group = {
+          date: n.pending ? "" : n.date || "",
+          pending: false,
+          plan: false,
+          current: false,
+          channels: new Map(),
+        };
+        index.set(key, group);
+        groups.push(group);
+      }
+      const group = index.get(key);
+      if (n.pending) group.pending = true;
+      if (n.plan) group.plan = true;
+      if (n.current) group.current = true;
+      if (n.channel) group.channels.set(n.channel, n.value != null ? n.value : n.percent);
+    });
+
+    if (!groups.some((g) => g.current && !g.pending)) {
+      for (let i = groups.length - 1; i >= 0; i--) {
+        if (!groups[i].pending) {
+          groups[i].current = true;
+          break;
+        }
+      }
+    }
+
+    groups.forEach((group) => {
+      if (group.current && !group.pending && grays.length) {
+        group.channels = new Map(grays.map((g) => [g.channel, g.value]));
+      }
+    });
+    return groups;
+  }
+
+  function buildTimelineNodes(row) {
+    const { nodes, grays } = prepareTimelineNodes(row);
     if (!nodes.length) {
       return `<div class="release-timeline-empty">暂无放量记录。可将状态改为「计划中」后开始跟踪。</div>`;
     }
 
-    function nPending(n) {
-      return !!n.pending;
-    }
-
-    const currentIdx = (() => {
-      let idx = nodes.findIndex((n) => n.current);
-      if (idx < 0) {
-        for (let i = nodes.length - 1; i >= 0; i--) {
-          if (!nPending(nodes[i])) {
-            idx = i;
-            break;
-          }
-        }
-      }
-      return idx;
-    })();
-
+    const groups = groupTimelineByDate(nodes, grays);
     return `
       <div class="release-timeline-list">
-        ${nodes
-          .map((n, i) => {
-            const isCurrent = i === currentIdx && !n.pending;
-            const isPending = !!n.pending;
+        ${groups
+          .map((group) => {
+            const channelList = [...group.channels.entries()].map(([channel, value]) => ({ channel, value }));
+            const isPending = !!group.pending;
+            const isCurrent = !!group.current && !isPending;
+            const isShared = !isPending && (group.plan || channelList.length !== 1);
+            const onlyCh = !isShared && channelList[0] ? String(channelList[0].channel).toLowerCase() : "";
             const cls = ["release-timeline-node"];
             if (isCurrent) cls.push("is-current");
             if (isPending) cls.push("is-pending");
-            const dateText = n.date || "—";
-            const pctText = `${n.percent}%`;
+            if (group.plan) cls.push("is-plan");
+            if (isShared) cls.push("is-shared");
+            if (onlyCh === "gp" || onlyCh === "ps" || onlyCh === "pa") cls.push(`is-${onlyCh}`);
+            const dateText = group.date || "—";
+            const parts = [];
+            if (group.plan) {
+              parts.push(`<span class="release-timeline-shared-label">进入计划中</span>`);
+            }
+            if (channelList.length) {
+              parts.push(
+                `<span class="release-timeline-pills">${channelList
+                  .map((g) => channelGrayPill(g.channel, g.value))
+                  .join("")}</span>`
+              );
+            } else if (isPending) {
+              parts.push(`<span class="release-timeline-shared-label">全量</span>`);
+            }
             return `
             <div class="${cls.join(" ")}">
               <div class="release-timeline-date">${escapeHtml(dateText)}</div>
               <div class="release-timeline-indicator" aria-hidden="true"></div>
               <div class="release-timeline-detail">
-                <strong>${escapeHtml(pctText)}</strong>
-                <span>${escapeHtml(n.note || "")}</span>
+                ${parts.join("")}
               </div>
             </div>`;
           })
@@ -552,12 +759,26 @@
     }
 
     const tags = [`<span class="rv-status-badge ${statusClass(row.status)}">${escapeHtml(row.status)}</span>`];
-    if (row.status !== "不涉及" && row.grayPercent != null) {
-      const label = row.grayPercent >= 100 ? "全量" : `灰度 ${row.grayPercent}%`;
-      tags.push(`<span class="rv-status-badge rv-status-planning">${escapeHtml(label)}</span>`);
-    }
+    const detailGrays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    detailGrays.forEach((g) => {
+      tags.push(
+        `<span class="rv-channel-pill is-${escapeHtml(g.channel.toLowerCase())}">${escapeHtml(g.channel)} ${escapeHtml(formatChannelGray(g.channel, g.value))}</span>`
+      );
+    });
     document.getElementById("rd-tags").innerHTML = tags.join("");
     setDetailChannels(row.channel);
+
+    const goalEl = document.getElementById("rd-goal");
+    goalEl.classList.remove("is-editing");
+    if (row.versionGoal) {
+      goalEl.innerHTML = escapeHtml(row.versionGoal)
+        .split(/\n+/)
+        .filter(Boolean)
+        .map((line) => `<p>${line}</p>`)
+        .join("");
+    } else {
+      goalEl.innerHTML = `<p class="rv-empty">暂无版本目标</p>`;
+    }
 
     const noteEl = document.getElementById("rd-note");
     noteEl.classList.remove("is-editing");
@@ -571,7 +792,80 @@
       noteEl.innerHTML = `<p class="rv-empty">暂无 Release Note</p>`;
     }
 
+    const dataSection = document.getElementById("rd-data-section");
+    const dataEl = document.getElementById("rd-data");
+    if (dataSection) dataSection.hidden = row.status !== "已发布";
+    if (dataEl) {
+      dataEl.classList.remove("is-editing");
+      if (row.dataInfo) {
+        dataEl.innerHTML = escapeHtml(row.dataInfo)
+          .split(/\n+/)
+          .filter(Boolean)
+          .map((line) => `<p>${line}</p>`)
+          .join("");
+      } else {
+        dataEl.innerHTML = `<p class="rv-empty">暂无数据信息</p>`;
+      }
+    }
+
     document.getElementById("rd-timeline").innerHTML = buildTimelineNodes(row);
+  }
+
+  function saveGoalInline() {
+    const ta = document.getElementById("rd-goal-editor");
+    if (!ta || !state.detailId) return;
+    const row = getReleaseById(state.detailId);
+    if (!row) return;
+    const goal = ta.value.trim();
+    if (row.status === "计划中" && !goal) {
+      showToast("计划中必须填写版本目标");
+      ta.focus();
+      return;
+    }
+    if (goal === (row.versionGoal || "").trim()) {
+      fillDetail(row);
+      return;
+    }
+    upsertRelease({ ...row, versionGoal: goal });
+    showToast("版本目标已保存");
+    fillDetail(getReleaseById(state.detailId));
+    render();
+  }
+
+  function beginGoalEdit() {
+    if (!state.detailId) return;
+    const row = getReleaseById(state.detailId);
+    if (!row) return;
+    const goalEl = document.getElementById("rd-goal");
+    if (goalEl.classList.contains("is-editing")) {
+      document.getElementById("rd-goal-editor")?.focus();
+      return;
+    }
+    const lockedHeight = Math.max(goalEl.offsetHeight, 48);
+    goalEl.classList.add("is-editing");
+    goalEl.innerHTML = `<textarea class="release-note-editor" id="rd-goal-editor" placeholder="请填写版本目标">${escapeHtml(row.versionGoal || "")}</textarea>`;
+    const ta = document.getElementById("rd-goal-editor");
+    ta.style.height = `${lockedHeight}px`;
+    ta.style.minHeight = `${lockedHeight}px`;
+    ta.focus();
+    const len = ta.value.length;
+    ta.setSelectionRange(len, len);
+    ta.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (state.noteSaving) return;
+        saveGoalInline();
+      }, 120);
+    });
+    ta.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        ta.blur();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        fillDetail(row);
+      }
+    });
   }
 
   function saveNoteInline() {
@@ -632,6 +926,58 @@
     });
   }
 
+  function saveDataInline() {
+    const ta = document.getElementById("rd-data-editor");
+    if (!ta || !state.detailId) return;
+    const row = getReleaseById(state.detailId);
+    if (!row) return;
+    const dataInfo = ta.value.trim();
+    if (dataInfo === (row.dataInfo || "").trim()) {
+      fillDetail(row);
+      return;
+    }
+    upsertRelease({ ...row, dataInfo });
+    showToast("数据信息已保存");
+    fillDetail(getReleaseById(state.detailId));
+    render();
+  }
+
+  function beginDataEdit() {
+    if (!state.detailId) return;
+    const row = getReleaseById(state.detailId);
+    if (!row || row.status !== "已发布") return;
+    const dataEl = document.getElementById("rd-data");
+    if (dataEl.classList.contains("is-editing")) {
+      document.getElementById("rd-data-editor")?.focus();
+      return;
+    }
+    const lockedHeight = Math.max(dataEl.offsetHeight, 48);
+    dataEl.classList.add("is-editing");
+    dataEl.innerHTML = `<textarea class="release-note-editor" id="rd-data-editor" placeholder="请填写数据信息">${escapeHtml(row.dataInfo || "")}</textarea>`;
+    const ta = document.getElementById("rd-data-editor");
+    ta.style.height = `${lockedHeight}px`;
+    ta.style.minHeight = `${lockedHeight}px`;
+    ta.focus();
+    const len = ta.value.length;
+    ta.setSelectionRange(len, len);
+    ta.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (state.noteSaving) return;
+        saveDataInline();
+      }, 120);
+    });
+    ta.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        ta.blur();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        fillDetail(row);
+      }
+    });
+  }
+
   function saveDetail() {
     if (!state.detailId) return;
     const row = getReleaseById(state.detailId);
@@ -643,13 +989,21 @@
     }
     state.noteSaving = true;
     const noteEl = document.getElementById("rd-note");
+    const goalEl = document.getElementById("rd-goal");
+    if (goalEl && goalEl.classList.contains("is-editing")) {
+      saveGoalInline();
+    }
     if (noteEl && noteEl.classList.contains("is-editing")) {
       saveNoteInline();
     }
+    const dataEl = document.getElementById("rd-data");
+    if (dataEl && dataEl.classList.contains("is-editing")) {
+      saveDataInline();
+    }
     const latest = getReleaseById(state.detailId) || row;
+    const next = typeof applyChannelSelection === "function" ? applyChannelSelection(latest, channel) : { ...latest, channel };
     upsertRelease({
-      ...latest,
-      channel,
+      ...next,
       extraReqIds: state.detailExtraReqIds.slice(),
       excludedReqIds: state.detailExcludedReqIds.slice(),
     });
@@ -668,6 +1022,7 @@
 
   function syncPlanningRequired(status) {
     const need = status === "计划中";
+    document.getElementById("re-goal-req").hidden = !need;
     document.getElementById("re-note-req").hidden = !need;
     document.getElementById("re-channel-req").hidden = !need;
   }
@@ -1080,6 +1435,7 @@
     document.getElementById("re-release-time").value = row.releaseTime || "";
     document.getElementById("re-release-time-text").textContent = row.releaseTime || "—";
     document.getElementById("re-apk").value = row.apkUrl || "";
+    document.getElementById("re-goal").value = row.versionGoal || "";
     document.getElementById("re-note").value = row.releaseNote || "";
     setPlanSelect("channel", row.channel || "", "请选择渠道");
     setPlanSelect("shuttle", row.shuttle || "", "选择班车月份");
@@ -1094,11 +1450,17 @@
     if (!row) return;
 
     const status = document.getElementById("re-status").value;
+    const versionGoal = document.getElementById("re-goal").value.trim();
     const note = document.getElementById("re-note").value.trim();
     const channel = formatChannels(document.getElementById("re-channel").value);
     const shuttle = document.getElementById("re-shuttle").value;
 
     if (status === "计划中") {
+      if (!versionGoal) {
+        showToast("计划中必须填写版本目标");
+        document.getElementById("re-goal").focus();
+        return;
+      }
       if (!note) {
         showToast("计划中必须填写 Release Note");
         return;
@@ -1109,19 +1471,20 @@
       }
     }
 
-    const next = {
+    let next = {
       ...row,
       status,
+      versionGoal,
       releaseNote: note,
-      channel,
       shuttle,
       extraReqIds: state.editExtraReqIds.slice(),
       excludedReqIds: state.editExcludedReqIds.slice(),
       includeGapReqs: !!state.editIncludeGap,
       timeline: (row.timeline || []).map((t) => ({ ...t })),
     };
+    next = typeof applyChannelSelection === "function" ? applyChannelSelection(next, channel) : { ...next, channel };
 
-    if (status === "计划中" && (next.grayPercent == null || row.status === "不涉及")) {
+    if (status === "计划中" && (row.status === "不涉及" || !next.channelGrays || !next.channelGrays.length)) {
       next.grayPercent = 0;
       if (!next.timeline.length) {
         next.timeline = [{ date: todayISO(), percent: 0, note: "进入计划中", current: true }];
@@ -1130,23 +1493,22 @@
 
     if (status === "不涉及") {
       next.grayPercent = null;
+      next.channelGrays = [];
       next.rolloutTime = "";
       next.channel = channel || "";
       next.timeline = [];
     }
 
-    // 仅当产品明确改为计划中/已发布，或灰度推进时才视为要发布
-    if (status === "计划中" && (!next.grayPercent || next.grayPercent <= 0)) {
+    const rolling = typeof hasRollingChannelGray === "function" ? hasRollingChannelGray(next) : next.grayPercent > 0;
+    if (status === "计划中" && !rolling) {
       next.status = "计划中";
-      next.grayPercent = 0;
     }
 
-    if (next.grayPercent != null && next.grayPercent > 0 && status !== "不涉及") {
+    if (rolling && status !== "不涉及") {
       next.status = "已发布";
-    } else if (status === "已发布" && (next.grayPercent == null || next.grayPercent <= 0)) {
-      // 不允许无灰度直接标已发布，退回计划中
+    } else if (status === "已发布" && !rolling) {
       next.status = "计划中";
-      next.grayPercent = 0;
+      next.grayPercent = next.grayPercent == null ? 0 : next.grayPercent;
       if (!next.timeline.length) {
         next.timeline = [{ date: todayISO(), percent: 0, note: "进入计划中", current: true }];
       }
@@ -1164,42 +1526,45 @@
     if (state.detailId === next.id) fillDetail(next);
   }
 
-  function applyGrayPercent(id, percent, { date = todayISO(), note = "", silent = false } = {}) {
+  function applyGrayPercent(id, percent, { date = todayISO(), note = "", silent = false, channel = "" } = {}) {
     const row = getReleaseById(id);
     if (!row || row.status === "不涉及") return null;
-    if (isFullGray(row)) {
-      if (!silent) showToast("已全量，不可再调整灰度");
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    const ch = channel || (grays[0] && grays[0].channel) || parseChannels(row.channel)[0] || "GP";
+    if (isFullGray(row, ch)) {
+      if (!silent) showToast(`${ch} 已全量，不可再调整`);
       return null;
     }
 
-    const pct = Math.max(0, Math.min(100, Number(percent)));
-    if (!Number.isFinite(pct)) return null;
-
-    const prev = row.grayPercent != null ? Number(row.grayPercent) : null;
-    if (prev === pct && row.rolloutTime === date) {
+    const value = clampChannelGray(ch, percent);
+    const prev = grays.find((g) => g.channel === ch);
+    if (prev && prev.value === value && row.rolloutTime === date) {
       return row;
     }
 
+    const ratio = channelGrayRatio(ch, value);
     const timeline = (row.timeline || []).map((t) => ({ ...t, current: false }));
     let noteText = note;
     if (!noteText) {
-      if (pct <= 0) noteText = "进入计划中";
-      else if (pct >= 100) noteText = "全量";
-      else if (!timeline.some((t) => t.percent > 0)) noteText = "开始放量";
-      else noteText = "当前灰度";
+      if (value <= 0) noteText = `${ch} 进入计划中`;
+      else if (value >= channelGrayMax(ch)) noteText = `${ch} 全量`;
+      else if (!timeline.some((t) => t.channel === ch && (t.value > 0 || t.percent > 0))) noteText = `${ch} 开始放量`;
+      else noteText = `${ch} 当前灰度`;
     }
-    timeline.push({ date, percent: pct, note: noteText, current: true });
+    timeline.push({ date, percent: ratio, value, channel: ch, note: noteText, current: true });
 
-    const next = {
+    const channelGrays = grays.map((g) => (g.channel === ch ? { ...g, value } : g));
+    if (!channelGrays.some((g) => g.channel === ch)) channelGrays.push({ channel: ch, value });
+    let next = attachGraySummary({
       ...row,
-      grayPercent: pct,
+      channelGrays,
       rolloutTime: date,
       timeline,
-      status: pct > 0 ? "已发布" : "计划中",
-    };
+    });
+    next.status = hasRollingChannelGray(next) ? "已发布" : "计划中";
 
     upsertRelease(next);
-    if (!silent) showToast(`灰度已更新为 ${pct >= 100 ? "全量" : pct + "%"}`);
+    if (!silent) showToast(`${ch} 已更新为 ${formatChannelGray(ch, value)}`);
     render();
     if (state.detailId === next.id) fillDetail(getReleaseById(next.id));
     return next;
@@ -1245,25 +1610,91 @@
 
   const grayPopoverState = {
     id: null,
+    channel: "",
     hideTimer: null,
     commitTimer: null,
     open: false,
+    binaryValue: 0,
   };
 
-  function syncGrayPopoverInputs(percent) {
-    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
-    document.getElementById("rv-gray-slider").value = String(pct);
-    document.getElementById("rv-gray-number").value = String(pct);
-    const display = document.getElementById("rv-gray-display");
-    if (display) display.textContent = `${pct}%`;
+  function popoverInputValue() {
+    const ch = grayPopoverState.channel || "GP";
+    const kind = channelGrayKind(ch);
+    if (kind === "binary") return grayPopoverState.binaryValue;
+    const raw = Number(document.getElementById("rv-gray-number").value);
+    if (kind === "volume") return clampChannelGray(ch, raw * 10000);
+    return clampChannelGray(ch, raw);
   }
 
-  function setGrayCellEditing(id) {
+  function syncGrayPopoverInputs(value) {
+    const ch = grayPopoverState.channel || "GP";
+    const kind = channelGrayKind(ch);
+    const slider = document.getElementById("rv-gray-slider");
+    const number = document.getElementById("rv-gray-number");
+    const display = document.getElementById("rv-gray-display");
+    const unit = document.getElementById("rv-gray-unit");
+    const label = document.getElementById("rv-gray-label");
+    const binary = document.getElementById("rv-gray-binary");
+    const valueWrap = document.querySelector("#rv-gray-popover .rv-gray-value-wrap");
+    const pop = document.getElementById("rv-gray-popover");
+    if (pop) {
+      pop.classList.remove("is-gp", "is-ps", "is-pa");
+      const key = String(ch || "").toLowerCase();
+      if (key === "gp" || key === "ps" || key === "pa") pop.classList.add(`is-${key}`);
+    }
+    if (label) label.textContent = kind === "volume" ? `${ch} 放量` : `${ch} 灰度`;
+    if (unit) unit.textContent = kind === "volume" ? "万" : "%";
+    if (slider) slider.hidden = kind === "binary";
+    if (binary) binary.hidden = kind !== "binary";
+    if (valueWrap) valueWrap.hidden = kind === "binary";
+    if (kind === "volume") {
+      const wan = Math.round(clampChannelGray(ch, value) / 10000);
+      if (slider) {
+        slider.min = "0";
+        slider.max = "50";
+        slider.value = String(wan);
+      }
+      if (number) {
+        number.min = "0";
+        number.max = "50";
+        number.value = String(wan);
+      }
+      if (display) display.textContent = formatChannelGray(ch, wan * 10000);
+      return;
+    }
+    if (kind === "binary") {
+      const on = clampChannelGray(ch, value) >= 100 ? 100 : 0;
+      grayPopoverState.binaryValue = on;
+      if (display) display.textContent = on >= 100 ? "100%" : "0%";
+      if (binary) {
+        binary.querySelectorAll("[data-binary]").forEach((btn) => {
+          btn.classList.toggle("is-on", Number(btn.dataset.binary) === on);
+        });
+      }
+      return;
+    }
+    const pct = clampChannelGray(ch, value);
+    if (slider) {
+      slider.min = "0";
+      slider.max = "100";
+      slider.value = String(pct);
+    }
+    if (number) {
+      number.min = "0";
+      number.max = "100";
+      number.value = String(pct);
+    }
+    if (display) display.textContent = formatChannelGray(ch, pct);
+  }
+
+  function setGrayCellEditing(id, channel) {
     document.querySelectorAll(".rv-gray-cell.is-editing").forEach((el) => {
       el.classList.remove("is-editing");
     });
     if (!id) return;
-    const cell = document.querySelector(`.rv-gray-cell[data-gray-id="${CSS.escape(id)}"]`);
+    const cell = [...document.querySelectorAll(".rv-gray-cell")].find(
+      (el) => el.dataset.grayId === id && (!channel || el.dataset.channel === channel)
+    );
     if (cell) cell.classList.add("is-editing");
   }
 
@@ -1289,18 +1720,22 @@
     pop.style.top = `${top}px`;
   }
 
-  function showGrayPopover(id, anchorEl) {
+  function showGrayPopover(id, anchorEl, channel) {
     const row = getReleaseById(id);
-    if (!row || row.status === "不涉及" || row.grayPercent == null) return;
-    if (isFullGray(row)) {
-      showToast("已全量，不可再调整灰度");
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    if (!row || row.status === "不涉及" || !grays.length) return;
+    const ch = channel || grays[0].channel;
+    if (isFullGray(row, ch)) {
+      showToast(`${ch} 已全量，不可再调整`);
       return;
     }
+    const current = grays.find((g) => g.channel === ch);
     clearTimeout(grayPopoverState.hideTimer);
     grayPopoverState.id = id;
+    grayPopoverState.channel = ch;
     grayPopoverState.open = true;
-    syncGrayPopoverInputs(row.grayPercent);
-    setGrayCellEditing(id);
+    syncGrayPopoverInputs(current ? current.value : 0);
+    setGrayCellEditing(id, ch);
     positionGrayPopover(anchorEl);
   }
 
@@ -1309,21 +1744,24 @@
     grayPopoverState.hideTimer = setTimeout(() => {
       const pop = document.getElementById("rv-gray-popover");
       pop.hidden = true;
+      pop.classList.remove("is-gp", "is-ps", "is-pa");
       grayPopoverState.open = false;
       grayPopoverState.id = null;
+      grayPopoverState.channel = "";
       setGrayCellEditing(null);
     }, delay);
   }
 
   function commitGrayFromPopover() {
     if (!grayPopoverState.id) return;
-    const percent = Number(document.getElementById("rv-gray-number").value);
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-      showToast("灰度百分比需在 0-100 之间");
+    const ch = grayPopoverState.channel || "GP";
+    const value = popoverInputValue();
+    if (!Number.isFinite(value)) {
+      showToast("请输入有效灰度");
       return;
     }
     const id = grayPopoverState.id;
-    applyGrayPercent(id, percent, { date: todayISO() });
+    applyGrayPercent(id, value, { date: todayISO(), channel: ch });
     hideGrayPopover(0);
   }
 
@@ -1339,13 +1777,14 @@
       e.preventDefault();
       e.stopPropagation();
       const id = btn.dataset.id;
+      const channel = btn.dataset.channel || "";
       const cell = btn.closest(".rv-gray-cell");
       if (!cell) return;
-      if (grayPopoverState.open && grayPopoverState.id === id) {
+      if (grayPopoverState.open && grayPopoverState.id === id && grayPopoverState.channel === channel) {
         hideGrayPopover(0);
         return;
       }
-      showGrayPopover(id, cell);
+      showGrayPopover(id, cell, channel);
     });
 
     document.addEventListener("click", (e) => {
@@ -1356,10 +1795,19 @@
     });
 
     slider.addEventListener("input", () => {
-      syncGrayPopoverInputs(slider.value);
+      const ch = grayPopoverState.channel || "GP";
+      const raw = channelGrayKind(ch) === "volume" ? Number(slider.value) * 10000 : Number(slider.value);
+      syncGrayPopoverInputs(raw);
     });
     number.addEventListener("input", () => {
-      syncGrayPopoverInputs(number.value);
+      const ch = grayPopoverState.channel || "GP";
+      const raw = channelGrayKind(ch) === "volume" ? Number(number.value) * 10000 : Number(number.value);
+      syncGrayPopoverInputs(raw);
+    });
+    document.getElementById("rv-gray-binary").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-binary]");
+      if (!btn) return;
+      syncGrayPopoverInputs(Number(btn.dataset.binary));
     });
 
     document.getElementById("rv-gray-confirm").addEventListener("click", (e) => {
@@ -1372,7 +1820,9 @@
       () => {
         if (!grayPopoverState.open || !grayPopoverState.id) return;
         const cell = [...document.querySelectorAll(".rv-gray-cell")].find(
-          (el) => el.dataset.grayId === grayPopoverState.id
+          (el) =>
+            el.dataset.grayId === grayPopoverState.id &&
+            (!grayPopoverState.channel || el.dataset.channel === grayPopoverState.channel)
         );
         if (cell) positionGrayPopover(cell);
         else hideGrayPopover(0);
@@ -1408,16 +1858,17 @@
 
     closeAllStatusDropdowns();
 
+    const hasGoal = Boolean((row.versionGoal || "").trim());
     const hasNote = Boolean((row.releaseNote || "").trim());
     const hasChannel = Boolean(row.channel);
     // 必填信息齐全才真正改状态；否则打开编辑，取消则保持「不涉及」
-    if (hasNote && hasChannel) {
-      const next = {
+    if (hasGoal && hasNote && hasChannel) {
+      const next = attachGraySummary({
         ...row,
         status: "计划中",
         grayPercent: 0,
         timeline: [{ date: todayISO(), percent: 0, note: "进入计划中", current: true }],
-      };
+      });
       upsertRelease(next);
       render();
       if (state.detailId === next.id) fillDetail(getReleaseById(next.id));
@@ -1443,6 +1894,10 @@
       const id = btn.dataset.id;
       if (btn.dataset.action === "view") openDetail(id);
       if (btn.dataset.action === "edit") openEdit(id);
+      if (btn.dataset.action === "remind") {
+        const row = getReleaseById(id);
+        showToast("已发送填写数据信息提醒");
+      }
     });
 
     document.addEventListener("click", (e) => {
@@ -1457,9 +1912,17 @@
     document.getElementById("rd-save-btn").addEventListener("click", () => {
       saveDetail();
     });
+    document.getElementById("rd-edit-goal-btn").addEventListener("click", (e) => {
+      e.preventDefault();
+      beginGoalEdit();
+    });
     document.getElementById("rd-edit-note-btn").addEventListener("click", (e) => {
       e.preventDefault();
       beginNoteEdit();
+    });
+    document.getElementById("rd-edit-data-btn").addEventListener("click", (e) => {
+      e.preventDefault();
+      beginDataEdit();
     });
 
     const detailReqSelect = document.getElementById("rd-req-select");
@@ -1565,6 +2028,59 @@
     });
   }
 
+  function openCreateModal() {
+    const modal = document.getElementById("release-create-modal");
+    document.getElementById("release-create-form").reset();
+    setPlanSelect("product", "", "请选择产品", modal);
+    openModal("release-create-modal");
+    document.getElementById("rv-new-product-btn").focus();
+  }
+
+  function saveCreate() {
+    const product = document.getElementById("rv-new-product").value;
+    const version = document.getElementById("rv-new-version").value.trim();
+    const apkUrl = document.getElementById("rv-new-apk").value.trim();
+    if (!product) {
+      showToast("请选择所属产品");
+      document.getElementById("rv-new-product-btn").focus();
+      return;
+    }
+    if (!version) {
+      showToast("请填写版本号");
+      document.getElementById("rv-new-version").focus();
+      return;
+    }
+    if (!apkUrl) {
+      showToast("请填写 APK 链接");
+      document.getElementById("rv-new-apk").focus();
+      return;
+    }
+    if (typeof addManualRelease !== "function") return;
+    const result = addManualRelease({ product, version, apkUrl });
+    if (!result.ok) {
+      showToast(result.error || "新增失败");
+      return;
+    }
+    closeModal("release-create-modal");
+    showToast("已新增版本");
+    state.page = 1;
+    render();
+  }
+
+  function setupCreateModal() {
+    document.getElementById("release-add-btn").addEventListener("click", openCreateModal);
+    document.getElementById("release-create-close").addEventListener("click", () => closeModal("release-create-modal"));
+    document.getElementById("release-create-cancel").addEventListener("click", () => closeModal("release-create-modal"));
+    document.getElementById("release-create-save").addEventListener("click", saveCreate);
+    document.getElementById("release-create-modal").addEventListener("click", (e) => {
+      if (e.target.id === "release-create-modal") closeModal("release-create-modal");
+    });
+    document.getElementById("release-create-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveCreate();
+    });
+  }
+
   function setupSidebar() {
     const sidebar = document.getElementById("home-sidebar");
     const collapseBtn = document.getElementById("home-collapse-btn");
@@ -1591,11 +2107,13 @@
     setupActions();
     setupGrayPopover();
     setupPlanSelects();
+    setupPlanSelects(document.getElementById("release-create-modal"));
+    setupCreateModal();
     document.addEventListener("click", () => {
       document.querySelectorAll(".dropdown").forEach((d) => {
         d.hidden = true;
       });
-      document.querySelectorAll("#release-edit-modal .select-menu, #release-detail-modal .select-menu").forEach((m) => {
+      document.querySelectorAll("#release-edit-modal .select-menu, #release-detail-modal .select-menu, #release-create-modal .select-menu").forEach((m) => {
         m.hidden = true;
       });
       closeAddReqPicker();

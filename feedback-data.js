@@ -2,6 +2,79 @@
 
 const FEEDBACK_PRODUCTS = ["全部", "Visha", "Notes", "Themes"];
 
+const FEEDBACK_ISSUE_CATEGORIES = ["全部", "整体稳定性", "加密笔记", "编辑器", "性能", "同步与备份", "下载与播放", "主题与字体"];
+const FEEDBACK_CONV_STATUSES = ["全部", "已转需求", "未转需求"];
+const FEEDBACK_PROGRESS_STATUSES = [
+  "全部",
+  "未启动",
+  "进行中",
+  "待评审",
+  "已评审",
+  "已排期",
+  "开发中",
+  "测试中",
+  "已完成",
+  "已取消",
+];
+
+const FEEDBACK_PROGRESS_COLORS = {
+  未启动: "#c7c7c7",
+  进行中: "#f2a61a",
+  待评审: "#e55966",
+  已评审: "#9459b2",
+  已排期: "#4d85e5",
+  开发中: "#2eb28c",
+  测试中: "#f2802e",
+  已完成: "#4db04f",
+  已取消: "#d9d4cc",
+};
+
+/** 问题点数据看板假数据（对齐 Figma 数据视图） */
+const FEEDBACK_ISSUES = [
+  { id: "i01", category: "整体稳定性", product: "Notes", name: "笔记丢失/删除/消失", severity: "阻断性", conversion: "已转需求", progress: "已完成" },
+  { id: "i02", category: "整体稳定性", product: "Notes", name: "应用崩溃/闪退", severity: "阻断性", conversion: "已转需求", progress: "开发中" },
+  { id: "i03", category: "整体稳定性", product: "Notes", name: "同步失败/数据不一致", severity: "严重", conversion: "已转需求", progress: "已排期" },
+  { id: "i04", category: "加密笔记", product: "Notes", name: "忘记密码/解锁问题", severity: "体验问题", conversion: "已转需求", progress: "进行中" },
+  { id: "i05", category: "加密笔记", product: "Notes", name: "加密功能异常", severity: "严重", conversion: "已转需求", progress: "已完成" },
+  { id: "i06", category: "编辑器", product: "Notes", name: "格式丢失/排版错乱", severity: "体验问题", conversion: "已转需求", progress: "测试中" },
+  { id: "i07", category: "编辑器", product: "Notes", name: "图片插入失败", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i08", category: "性能", product: "Notes", name: "大文档卡顿", severity: "严重", conversion: "未转需求", progress: null },
+  { id: "i09", category: "性能", product: "Notes", name: "启动过慢/白屏", severity: "严重", conversion: "已转需求", progress: "开发中" },
+  { id: "i10", category: "同步与备份", product: "Notes", name: "云同步冲突", severity: "严重", conversion: "已转需求", progress: "待评审" },
+  { id: "i11", category: "同步与备份", product: "Notes", name: "备份恢复失败", severity: "阻断性", conversion: "已转需求", progress: "已评审" },
+  { id: "i12", category: "编辑器", product: "Notes", name: "清单勾选状态丢失", severity: "体验问题", conversion: "已转需求", progress: "未启动" },
+  { id: "i13", category: "整体稳定性", product: "Notes", name: "登录态异常失效", severity: "严重", conversion: "已转需求", progress: "测试中" },
+  { id: "i14", category: "性能", product: "Notes", name: "搜索结果加载慢", severity: "体验问题", conversion: "已转需求", progress: "进行中" },
+  { id: "i15", category: "加密笔记", product: "Notes", name: "加密后无法分享", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i16", category: "下载与播放", product: "Visha", name: "下载功能异常/无法使用", severity: "阻断性", conversion: "已转需求", progress: "开发中" },
+  { id: "i17", category: "下载与播放", product: "Visha", name: "视频加载超时", severity: "严重", conversion: "已转需求", progress: "已排期" },
+  { id: "i18", category: "下载与播放", product: "Visha", name: "音频播放中断", severity: "体验问题", conversion: "已转需求", progress: "进行中" },
+  { id: "i19", category: "整体稳定性", product: "Visha", name: "预览页崩溃闪退", severity: "阻断性", conversion: "已转需求", progress: "已完成" },
+  { id: "i20", category: "性能", product: "Visha", name: "首页推荐卡顿", severity: "严重", conversion: "已转需求", progress: "待评审" },
+  { id: "i21", category: "下载与播放", product: "Visha", name: "本地音频导入失败", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i22", category: "整体稳定性", product: "Visha", name: "登录态频繁失效", severity: "严重", conversion: "已转需求", progress: "测试中" },
+  { id: "i23", category: "下载与播放", product: "Visha", name: "无法下载", severity: "阻断性", conversion: "已转需求", progress: "开发中" },
+  { id: "i24", category: "性能", product: "Visha", name: "更新后性能问题", severity: "严重", conversion: "已转需求", progress: "已评审" },
+  { id: "i25", category: "下载与播放", product: "Visha", name: "缓存清理后需重下", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i26", category: "主题与字体", product: "Themes", name: "字体样式缺失或无法应用", severity: "严重", conversion: "已转需求", progress: "已排期" },
+  { id: "i27", category: "主题与字体", product: "Themes", name: "主题应用失败", severity: "阻断性", conversion: "已转需求", progress: "开发中" },
+  { id: "i28", category: "主题与字体", product: "Themes", name: "壁纸下载缓慢", severity: "体验问题", conversion: "已转需求", progress: "进行中" },
+  { id: "i29", category: "主题与字体", product: "Themes", name: "动态壁纸停止工作", severity: "严重", conversion: "已转需求", progress: "待评审" },
+  { id: "i30", category: "主题与字体", product: "Themes", name: "锁屏壁纸深度效果缺失", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i31", category: "整体稳定性", product: "Themes", name: "应用无法打开崩溃", severity: "阻断性", conversion: "已转需求", progress: "已完成" },
+  { id: "i32", category: "主题与字体", product: "Themes", name: "网络连接问题导致预览失败", severity: "严重", conversion: "已转需求", progress: "未启动" },
+  { id: "i33", category: "编辑器", product: "Notes", name: "文本编辑功能异常", severity: "严重", conversion: "已转需求", progress: "已取消" },
+  { id: "i34", category: "同步与备份", product: "Notes", name: "文件夹批量管理异常", severity: "体验问题", conversion: "已转需求", progress: "已排期" },
+  { id: "i35", category: "性能", product: "Notes", name: "附件预览内存占用过高", severity: "严重", conversion: "已转需求", progress: "开发中" },
+  { id: "i36", category: "整体稳定性", product: "Notes", name: "多窗口切换白屏", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i37", category: "下载与播放", product: "Visha", name: "搜索无结果/建议缺失", severity: "体验问题", conversion: "已转需求", progress: "已评审" },
+  { id: "i38", category: "性能", product: "Visha", name: "连续播放发热严重", severity: "严重", conversion: "已转需求", progress: "测试中" },
+  { id: "i39", category: "整体稳定性", product: "Visha", name: "后台被杀后进度丢失", severity: "严重", conversion: "已转需求", progress: "进行中" },
+  { id: "i40", category: "主题与字体", product: "Themes", name: "自定义颜色保存失败", severity: "体验问题", conversion: "未转需求", progress: null },
+  { id: "i41", category: "加密笔记", product: "Notes", name: "生物识别解锁失败", severity: "严重", conversion: "已转需求", progress: "已完成" },
+  { id: "i42", category: "编辑器", product: "Notes", name: "撤销/重做栈异常", severity: "体验问题", conversion: "已转需求", progress: "未启动" },
+];
+
 const FEEDBACK_WEEKS = [
   {
     id: "w-visha-0720",

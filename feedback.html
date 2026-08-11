@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>用户反馈</title>
-  <link rel="stylesheet" href="styles.css?v=20260731fb1" />
+  <link rel="stylesheet" href="styles.css?v=20260811fb9" />
 </head>
 <body>
   <div class="home-shell feedback-shell">
@@ -37,12 +37,18 @@
             <h1>用户反馈</h1>
             <p>收集、处理、归纳并追踪全渠道的用户真实原声及产品体验问题</p>
           </div>
-          <div class="filter-btn-wrap feedback-product-filter">
-            <button class="filter-btn feedback-product-btn" id="feedback-product-btn" type="button">
-              <span><b id="feedback-product-value">全部</b></span>
-              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
-            </button>
-            <div class="dropdown" id="feedback-product-dropdown" hidden></div>
+          <div class="feedback-header-actions">
+            <div class="view-toggle" id="feedback-view-toggle" role="group" aria-label="视图切换">
+              <button type="button" class="toggle-btn active" data-view="week">周报</button>
+              <button type="button" class="toggle-btn" data-view="data">数据</button>
+            </div>
+            <div class="filter-btn-wrap feedback-product-filter">
+              <button class="filter-btn feedback-product-btn" id="feedback-product-btn" type="button">
+                <span><b id="feedback-product-value">全部</b></span>
+                <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+              </button>
+              <div class="dropdown" id="feedback-product-dropdown" hidden></div>
+            </div>
           </div>
         </div>
       </header>
@@ -71,19 +77,83 @@
               <div class="feedback-table-body" id="week-table-body"></div>
             </div>
           </div>
+
+          <footer class="pagination-bar feedback-pagination-bar">
+            <span id="feedback-total-count">共 0 条反馈周期记录</span>
+            <div class="pagination" id="feedback-pagination"></div>
+          </footer>
         </section>
 
-        <footer class="pagination-bar feedback-pagination-bar">
-          <span id="feedback-total-count">共 0 条反馈周期记录</span>
-          <div class="pagination" id="feedback-pagination"></div>
-        </footer>
+        <section class="feedback-pane" id="pane-data" hidden>
+          <div class="fb-data-kpis" id="fb-data-kpis"></div>
+
+          <div class="fb-data-charts">
+            <div class="fb-data-chart-card">
+              <h3 class="fb-data-chart-title">转化状态分布</h3>
+              <div class="fb-data-donut-row" id="fb-conv-chart"></div>
+            </div>
+            <div class="fb-data-chart-card">
+              <h3 class="fb-data-chart-title">进度分布</h3>
+              <div class="fb-data-donut-row" id="fb-progress-chart"></div>
+            </div>
+          </div>
+
+          <div class="fb-data-table-card">
+            <div class="fb-data-toolbar">
+              <div class="search-box fb-data-search">
+                <img src="assets/icons/search.svg" alt="" />
+                <input type="search" id="fb-data-search" placeholder="搜索问题点..." autocomplete="off" />
+              </div>
+              <div class="fb-data-filters">
+                <div class="filter-btn-wrap">
+                  <button class="filter-btn" id="fb-cat-btn" type="button">
+                    <span>反馈分类: <b id="fb-cat-value">全部</b></span>
+                    <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+                  </button>
+                  <div class="dropdown" id="fb-cat-dropdown" hidden></div>
+                </div>
+                <div class="filter-btn-wrap">
+                  <button class="filter-btn" id="fb-conv-btn" type="button">
+                    <span>转化状态: <b id="fb-conv-value">全部</b></span>
+                    <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+                  </button>
+                  <div class="dropdown" id="fb-conv-dropdown" hidden></div>
+                </div>
+                <div class="filter-btn-wrap">
+                  <button class="filter-btn" id="fb-prog-btn" type="button">
+                    <span>进度: <b id="fb-prog-value">全部</b></span>
+                    <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+                  </button>
+                  <div class="dropdown" id="fb-prog-dropdown" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="feedback-table-scroll">
+              <div class="feedback-table-header fb-data-header">
+                <div class="fb-th fb-d-cat">反馈分类</div>
+                <div class="fb-th fb-d-product">所属产品</div>
+                <div class="fb-th fb-d-name">问题点名称</div>
+                <div class="fb-th fb-d-sev">严重度</div>
+                <div class="fb-th fb-d-conv">转化状态</div>
+                <div class="fb-th fb-d-prog">进度</div>
+              </div>
+              <div class="feedback-table-body" id="data-table-body"></div>
+            </div>
+
+            <footer class="pagination-bar feedback-pagination-bar fb-data-pagination-bar">
+              <span id="fb-data-total-count">共 0 条问题点</span>
+              <div class="pagination" id="fb-data-pagination"></div>
+            </footer>
+          </div>
+        </section>
       </div>
     </div>
   </div>
 
   <div class="toast" id="feedback-toast" hidden role="status"></div>
 
-  <script src="feedback-data.js?v=20260731fb1"></script>
-  <script src="feedback.js?v=20260731fb1"></script>
+  <script src="feedback-data.js?v=20260811fb8"></script>
+  <script src="feedback.js?v=20260811fb8"></script>
 </body>
 </html>
