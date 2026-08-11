@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>班车看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260810r7" />
+</head>
+<body>
+  <div class="page shuttle-page">
+    <header class="page-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <a class="crumb crumb-link" href="version.html">版本管理平台</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">班车看板</span>
+      </nav>
+
+      <div class="title-row">
+        <div class="title-left">
+          <h1>班车看板</h1>
+          <p>按工作日时间轴查看版本班车各阶段节奏，支持新增与编辑排期</p>
+        </div>
+        <div class="quick-filters">
+          <button class="btn-primary" id="btn-add-shuttle" type="button">
+            <img src="assets/icons/plus.svg" alt="" />
+            <span>新增班车</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="shuttle-toolbar">
+      <div class="shuttle-toolbar-left">
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="shuttle-year-btn" type="button">
+            <span>年份: <b id="shuttle-year-value">2026</b></span>
+            <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+          </button>
+          <div class="dropdown" id="shuttle-year-dropdown" hidden></div>
+        </div>
+        <div class="filter-btn-wrap">
+          <button class="filter-btn" id="shuttle-month-btn" type="button">
+            <span>月份: <b id="shuttle-month-value">全部</b></span>
+            <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+          </button>
+          <div class="dropdown" id="shuttle-month-dropdown" hidden></div>
+        </div>
+      </div>
+      <div class="shuttle-legend" aria-label="阶段图例">
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-spec"></i>班车规矩</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-plan"></i>计划输出</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-material"></i>物料输出</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-gray"></i>灰度版本</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-full"></i>全量版本</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-feedback"></i>数据反馈</span>
+        <span class="shuttle-legend-item"><i class="shuttle-swatch shuttle-c-retro"></i>回顾会议</span>
+        <button type="button" class="gantt-legend-item gantt-today-jump" id="shuttle-today-btn" title="跳转到今天">
+          <i class="gantt-today-swatch"></i>今日
+        </button>
+      </div>
+    </div>
+
+    <main class="shuttle-board" id="shuttle-board">
+      <div class="shuttle-left">
+        <div class="shuttle-left-header">
+          <div class="shuttle-corner">
+            <span class="shuttle-corner-biz">业务</span>
+            <span class="shuttle-corner-time">时间</span>
+          </div>
+        </div>
+        <div class="shuttle-left-body" id="shuttle-left-body"></div>
+      </div>
+      <div class="shuttle-right" id="shuttle-right">
+        <div class="shuttle-timeline-header" id="shuttle-timeline-header"></div>
+        <div class="shuttle-timeline-body" id="shuttle-timeline-body"></div>
+      </div>
+    </main>
+
+    <footer class="pagination-bar">
+      <span id="shuttle-total-count">共 0 条班车</span>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="shuttle-modal" hidden>
+    <div class="modal modal-shuttle" role="dialog" aria-modal="true" aria-labelledby="shuttle-modal-title">
+      <div class="modal-header schedule-modal-header">
+        <h2 id="shuttle-modal-title">新增班车</h2>
+        <button class="modal-close schedule-close-btn" id="shuttle-modal-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>班车名称</label>
+          <input class="field-input" id="shuttle-name" type="text" placeholder="如 9月份班车" />
+        </div>
+
+        <section class="schedule-section">
+          <div class="schedule-section-title">阶段日期</div>
+          <div class="shuttle-date-grid" id="shuttle-date-grid"></div>
+        </section>
+      </div>
+      <div class="modal-footer schedule-modal-footer">
+        <div class="shuttle-modal-footer-right">
+          <button type="button" class="btn-secondary" id="shuttle-modal-cancel">取消</button>
+          <button type="button" class="btn-primary" id="shuttle-modal-save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260810r1"></script>
+  <script src="shuttle-data.js?v=20260810r3"></script>
+  <script src="shuttle.js?v=20260810r7"></script>
+</body>
+</html>

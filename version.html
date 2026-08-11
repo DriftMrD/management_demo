@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>版本管理平台</title>
-  <link rel="stylesheet" href="styles.css?v=20260728fb1" />
+  <link rel="stylesheet" href="styles.css?v=20260811r1" />
 </head>
 <body>
   <div class="home-shell">
@@ -38,6 +38,20 @@
       <main class="home-main-body">
         <h2 class="home-section-label">系统功能模块</h2>
         <section class="home-module-row" aria-label="功能模块">
+          <a class="home-module-card" href="release.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/package.svg" alt="" />
+                <h3>版本看板</h3>
+              </div>
+              <p>沉淀可发布版本，跟踪计划发布、灰度放量与全量进度</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="release-count-badge">0个计划中</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
+
           <a class="home-module-card" href="feedback.html">
             <div class="home-module-top">
               <div class="home-module-title-row">
@@ -51,14 +65,39 @@
               <span class="home-module-enter">进入模块 &gt;</span>
             </div>
           </a>
+
+          <a class="home-module-card" href="shuttle.html">
+            <div class="home-module-top">
+              <div class="home-module-title-row">
+                <img src="assets/icons/calendar.svg" alt="" />
+                <h3>班车看板</h3>
+              </div>
+              <p>以甘特图呈现版本班车节奏，覆盖规范、灰度、全量与回顾节点</p>
+            </div>
+            <div class="home-module-bottom">
+              <span class="home-stat-badge" id="shuttle-count-badge">0条班车</span>
+              <span class="home-module-enter">进入模块 &gt;</span>
+            </div>
+          </a>
         </section>
       </main>
     </div>
   </div>
 
   <script src="feedback-data.js?v=20260728fb1"></script>
+  <script src="shuttle-data.js?v=20260810r3"></script>
+  <script src="data.js?v=20260811r2"></script>
+  <script src="release-data.js?v=20260811r5"></script>
   <script>
     document.getElementById("feedback-count-badge").textContent = `${FEEDBACK_WEEKS.length}条周报`;
+    document.getElementById("shuttle-count-badge").textContent = `${getShuttles().length}条班车`;
+    const releaseCounts = getReleaseBadgeCounts();
+    document.getElementById("release-count-badge").textContent =
+      releaseCounts.rolling > 0
+        ? `${releaseCounts.rolling}个放量中`
+        : releaseCounts.planning > 0
+          ? `${releaseCounts.planning}个计划中`
+          : `${releaseCounts.total}个版本`;
 
     const sidebar = document.getElementById("home-sidebar");
     const collapseBtn = document.getElementById("home-collapse-btn");

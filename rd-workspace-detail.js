@@ -1134,6 +1134,10 @@ function commitApkFieldEdit(fieldEl) {
   const iteration = findIteration(pageState.name, pageState.product);
   if (!iteration) return;
   iteration[kind] = input.value.trim();
+  if (!iteration.apkFilledAt && (iteration.apkUrl || iteration.apkVersion)) {
+    iteration.apkFilledAt = typeof todayISO === "function" ? todayISO() : new Date().toISOString().slice(0, 10);
+  }
+  if (typeof persistIterationApk === "function") persistIterationApk(iteration);
   const grid = document.getElementById("detail-apk-grid");
   if (grid) grid.innerHTML = renderApkInfo(iteration);
 }

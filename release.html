@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>版本看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260811r65" />
+</head>
+<body>
+  <div class="home-shell feedback-shell release-shell">
+    <aside class="home-sidebar" id="home-sidebar" aria-label="项目管理导航">
+      <div class="home-sidebar-top">
+        <a class="home-sidebar-title" href="index.html">项目管理</a>
+        <button type="button" class="home-collapse-btn" id="home-collapse-btn" aria-label="收起导航" aria-expanded="true">
+          <img src="assets/icons/chevron-down.svg" alt="" class="home-collapse-icon" />
+        </button>
+      </div>
+      <nav class="home-sidebar-nav">
+        <a class="home-nav-item" href="requirements.html">需求管理系统</a>
+        <a class="home-nav-item" href="iteration.html">迭代管理系统</a>
+        <a class="home-nav-item active" href="version.html">版本管理平台</a>
+      </nav>
+    </aside>
+
+    <div class="home-main-panel feedback-main">
+      <header class="feedback-page-header release-page-header">
+        <nav class="breadcrumb">
+          <a class="crumb crumb-link" href="index.html">项目管理</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <a class="crumb crumb-link" href="version.html">版本管理平台</a>
+          <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+          <span class="crumb current">版本看板</span>
+        </nav>
+
+        <div class="title-row">
+          <div class="title-left">
+            <h1>版本看板</h1>
+            <p>跟踪计划发布、灰度放量与全量进度</p>
+          </div>
+          <div class="release-filters">
+            <div class="filter-btn-wrap">
+              <button class="filter-btn" id="release-product-btn" type="button">
+                <span>所属产品: <b id="release-product-value">全部</b></span>
+                <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+              </button>
+              <div class="dropdown" id="release-product-dropdown" hidden></div>
+            </div>
+            <div class="filter-btn-wrap">
+              <button class="filter-btn" id="release-status-btn" type="button">
+                <span>发布状态: <b id="release-status-value">全部</b></span>
+                <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+              </button>
+              <div class="dropdown" id="release-status-dropdown" hidden></div>
+            </div>
+            <label class="release-search" for="release-search-input">
+              <img src="assets/icons/search.svg" alt="" />
+              <input id="release-search-input" type="search" placeholder="搜索版本号..." autocomplete="off" />
+            </label>
+          </div>
+        </div>
+      </header>
+
+      <div class="feedback-body release-body">
+        <section class="feedback-pane">
+          <div class="feedback-table-card release-table-card">
+            <div class="feedback-table-scroll">
+              <div class="feedback-table-header release-table-header">
+                <div class="fb-th rv-w-product">产品</div>
+                <div class="fb-th rv-w-version">版本号</div>
+                <div class="fb-th rv-w-status">发布状态</div>
+                <div class="fb-th rv-w-shuttle sortable" data-key="shuttle">班车 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+                <div class="fb-th rv-w-gray sortable" data-key="grayPercent">灰度% <img src="assets/icons/arrow-down.svg" alt="" /></div>
+                <div class="fb-th rv-w-rollout">最新放量时间</div>
+                <div class="fb-th rv-w-release sortable" data-key="releaseTime">首次释放时间 <img src="assets/icons/arrow-down.svg" alt="" /></div>
+                <div class="fb-th rv-w-channel">渠道</div>
+                <div class="fb-th rv-w-apk">APK</div>
+                <div class="fb-th rv-w-action">操作</div>
+              </div>
+              <div class="feedback-table-body" id="release-table-body"></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="pagination-bar release-pagination-bar">
+          <span id="release-total-count">共 0 条版本</span>
+          <div class="pagination" id="release-pagination"></div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <!-- 版本详情抽屉 -->
+  <div class="modal-overlay detail-drawer-overlay release-drawer-overlay" id="release-detail-modal" hidden>
+    <div class="modal detail-drawer release-detail-drawer" role="dialog" aria-modal="true" aria-labelledby="release-detail-title">
+      <div class="release-drawer-header">
+        <div class="release-drawer-title-row">
+          <h2 id="release-detail-title">版本详情</h2>
+          <button class="modal-close" id="release-detail-close" type="button" aria-label="关闭">
+            <img src="assets/icons/x-circle.svg" alt="" />
+          </button>
+        </div>
+        <p class="release-drawer-version" id="rd-version">—</p>
+        <div class="release-drawer-tags" id="rd-tags"></div>
+      </div>
+
+      <div class="modal-body release-drawer-body">
+        <section class="release-section">
+          <h3>基本信息</h3>
+          <div class="release-info-grid">
+            <div class="release-info-item">
+              <span class="release-info-label">所属产品</span>
+              <span class="release-info-value" id="rd-product">—</span>
+            </div>
+            <div class="release-info-item">
+              <span class="release-info-label">关联迭代</span>
+              <span class="release-info-value" id="rd-iteration">—</span>
+            </div>
+            <div class="release-info-item">
+              <span class="release-info-label">关联班车</span>
+              <span class="release-info-value" id="rd-shuttle">—</span>
+            </div>
+            <div class="release-info-item">
+              <span class="release-info-label">首次释放时间</span>
+              <span class="release-info-value" id="rd-release-time">—</span>
+            </div>
+            <div class="release-info-item">
+              <span class="release-info-label">APK链接</span>
+              <span class="release-info-value" id="rd-apk">—</span>
+            </div>
+            <div class="release-info-item">
+              <span class="release-info-label">渠道</span>
+              <div class="release-channel-checks" id="rd-channel-checks">
+                <label class="release-channel-check">
+                  <input type="checkbox" value="GP" />
+                  <span class="plan-check" aria-hidden="true"></span>
+                  <span>GP (Google Play)</span>
+                </label>
+                <label class="release-channel-check">
+                  <input type="checkbox" value="PS" />
+                  <span class="plan-check" aria-hidden="true"></span>
+                  <span>PS (Palmstore)</span>
+                </label>
+                <label class="release-channel-check">
+                  <input type="checkbox" value="PA" />
+                  <span class="plan-check" aria-hidden="true"></span>
+                  <span>PA (Appupdate)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="release-section release-detail-req-section">
+          <h3>版本需求</h3>
+          <div class="release-req-select" id="rd-req-select">
+            <button type="button" class="release-req-select-btn" id="rd-req-add">
+              <span>添加需求</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="release-req-select-menu" id="rd-req-select-menu" hidden>
+              <div class="release-req-select-search">
+                <img src="assets/icons/search.svg" alt="" />
+                <input type="search" id="rd-add-req-search" placeholder="搜索需求编号或名称" autocomplete="off" />
+              </div>
+              <div class="release-req-select-list" id="rd-add-req-list"></div>
+            </div>
+          </div>
+          <div class="release-plan-req-wrap">
+            <table class="release-plan-req-table">
+              <thead>
+                <tr>
+                  <th class="col-name">所属需求</th>
+                  <th class="col-value">价值点</th>
+                  <th class="col-priority">优先级</th>
+                  <th class="col-type">落地类型</th>
+                  <th class="col-version">落地版本</th>
+                  <th class="col-ops"></th>
+                </tr>
+              </thead>
+              <tbody id="rd-reqs"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="release-section">
+          <div class="release-section-title-row">
+            <h3>Release Note</h3>
+            <button type="button" class="release-inline-edit" id="rd-edit-note-btn" aria-label="编辑 Release Note" title="编辑">
+              <img src="assets/icons/pencil.svg" alt="" />
+            </button>
+          </div>
+          <div class="release-note-card" id="rd-note">暂无 Release Note</div>
+        </section>
+
+        <section class="release-section">
+          <h3>放量时间线</h3>
+          <div class="release-timeline" id="rd-timeline"></div>
+        </section>
+      </div>
+
+      <div class="modal-footer release-drawer-footer">
+        <button type="button" class="btn-primary release-btn-primary" id="rd-save-btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发布计划设置（不涉及 → 计划中）/ 编辑发布信息 -->
+  <div class="modal-overlay" id="release-edit-modal" hidden>
+    <div class="modal modal-release-plan" role="dialog" aria-modal="true" aria-labelledby="release-edit-title">
+      <div class="modal-header release-plan-header">
+        <div class="release-plan-heading">
+          <h2 id="release-edit-title">发布计划设置</h2>
+          <div class="release-plan-meta">
+            <p class="release-plan-sub" id="release-edit-sub"></p>
+            <span class="release-plan-shift" id="release-edit-shift" hidden>不涉及 → 计划中</span>
+          </div>
+        </div>
+        <button class="modal-close" id="release-edit-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <form class="modal-body release-plan-body" id="release-edit-form" autocomplete="off">
+        <section class="release-plan-section">
+          <h3 class="release-plan-section-title">基本信息</h3>
+          <div class="release-plan-info-grid">
+            <div class="release-plan-info-item">
+              <span class="release-plan-info-label">所属产品</span>
+              <span class="release-plan-info-value" id="re-product-text">—</span>
+              <input type="hidden" id="re-product" />
+            </div>
+            <div class="release-plan-info-item">
+              <span class="release-plan-info-label">版本号</span>
+              <span class="release-plan-info-value" id="re-version-text">—</span>
+              <input type="hidden" id="re-version" />
+            </div>
+            <div class="release-plan-info-item">
+              <span class="release-plan-info-label">释放时间</span>
+              <span class="release-plan-info-value" id="re-release-time-text">—</span>
+              <input type="hidden" id="re-release-time" />
+            </div>
+            <div class="release-plan-info-item">
+              <span class="release-plan-info-label">关联迭代</span>
+              <span class="release-plan-info-value" id="re-iteration-text">—</span>
+              <input type="hidden" id="re-iteration" />
+            </div>
+          </div>
+          <div class="field release-plan-edit-only">
+            <label class="field-label">APK</label>
+            <input class="field-input" id="re-apk" type="text" readonly />
+          </div>
+          <div class="field release-plan-edit-only">
+            <label class="field-label"><span class="req" id="re-status-req" hidden>*</span>发布状态</label>
+            <div class="select-wrap" data-plan-select="status">
+              <button type="button" class="field-select" id="re-status-btn">
+                <span class="select-text" id="re-status-text">不涉及</span>
+                <img src="assets/icons/chevron-down.svg" alt="" />
+              </button>
+              <div class="select-menu" id="re-status-menu" hidden></div>
+              <input type="hidden" id="re-status" />
+            </div>
+          </div>
+        </section>
+
+        <section class="release-plan-section release-plan-req-section">
+          <div class="release-plan-section-bar">
+            <h3 class="release-plan-section-title">版本需求</h3>
+            <label class="release-plan-gap-check" title="展示上一次发布到当前版本之间的需求">
+              <input type="checkbox" id="re-req-gap" />
+              <span class="plan-check" aria-hidden="true"></span>
+              <span>展示距上次发布的需求</span>
+            </label>
+          </div>
+          <div class="release-req-select" id="re-req-select">
+            <button type="button" class="release-req-select-btn" id="re-req-add">
+              <span>添加需求</span>
+              <img src="assets/icons/chevron-down.svg" alt="" />
+            </button>
+            <div class="release-req-select-menu" id="re-req-select-menu" hidden>
+              <div class="release-req-select-search">
+                <img src="assets/icons/search.svg" alt="" />
+                <input type="search" id="release-add-req-search" placeholder="搜索需求编号或名称" autocomplete="off" />
+              </div>
+              <div class="release-req-select-list" id="release-add-req-list"></div>
+            </div>
+          </div>
+          <div class="release-plan-req-wrap">
+            <table class="release-plan-req-table">
+              <thead>
+                <tr>
+                  <th class="col-name">所属需求</th>
+                  <th class="col-value">价值点</th>
+                  <th class="col-priority">优先级</th>
+                  <th class="col-type">落地类型</th>
+                  <th class="col-version">落地版本</th>
+                  <th class="col-ops"></th>
+                </tr>
+              </thead>
+              <tbody id="re-req-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="release-plan-section">
+          <h3 class="release-plan-section-title">发布信息</h3>
+          <div class="field">
+            <label class="field-label"><span class="req" id="re-note-req" hidden>*</span>Release Note</label>
+            <textarea class="field-textarea" id="re-note" rows="4" placeholder="请输入版本发布说明..."></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label"><span class="req" id="re-channel-req" hidden>*</span>渠道</label>
+              <div class="select-wrap" data-plan-select="channel">
+                <button type="button" class="field-select" id="re-channel-btn">
+                  <span class="select-text placeholder" id="re-channel-text">请选择渠道</span>
+                  <img src="assets/icons/chevron-down.svg" alt="" />
+                </button>
+                <div class="select-menu" id="re-channel-menu" hidden></div>
+                <input type="hidden" id="re-channel" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">关联班车</label>
+              <div class="select-wrap" data-plan-select="shuttle">
+                <button type="button" class="field-select" id="re-shuttle-btn">
+                  <span class="select-text placeholder" id="re-shuttle-text">选择班车月份</span>
+                  <img src="assets/icons/chevron-down.svg" alt="" />
+                </button>
+                <div class="select-menu" id="re-shuttle-menu" hidden></div>
+                <input type="hidden" id="re-shuttle" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="release-edit-cancel">取消</button>
+        <button type="button" class="btn-primary" id="release-edit-save">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 更新灰度 -->
+  <div class="modal-overlay" id="release-gray-modal" hidden>
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="release-gray-title">
+      <div class="modal-header">
+        <h2 id="release-gray-title">更新灰度</h2>
+        <button class="modal-close" id="release-gray-close" type="button" aria-label="关闭">
+          <img src="assets/icons/x-circle.svg" alt="" />
+        </button>
+      </div>
+      <form class="modal-body" id="release-gray-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>灰度百分比</label>
+          <input class="field-input" id="rg-percent" type="number" min="0" max="100" step="1" placeholder="0-100" />
+        </div>
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>生效日期</label>
+          <input class="field-input" id="rg-date" type="date" />
+        </div>
+        <div class="field">
+          <label class="field-label">备注</label>
+          <input class="field-input" id="rg-note" type="text" placeholder="如：扩大放量" />
+        </div>
+      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="release-gray-cancel">取消</button>
+        <button type="button" class="btn-primary" id="release-gray-save">确认更新</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="release-toast" hidden role="status"></div>
+
+  <!-- 灰度% 浮窗（对齐 Figma 385:232） -->
+  <div class="rv-gray-popover" id="rv-gray-popover" hidden>
+    <div class="rv-gray-popover-head">
+      <span class="rv-gray-popover-label">灰度百分比</span>
+      <span class="rv-gray-popover-value" id="rv-gray-display">0%</span>
+    </div>
+    <input type="range" class="rv-gray-slider" id="rv-gray-slider" min="0" max="100" step="1" value="0" />
+    <div class="rv-gray-popover-foot">
+      <div class="rv-gray-value-wrap">
+        <input type="number" class="rv-gray-number" id="rv-gray-number" min="0" max="100" step="1" value="0" />
+        <span>%</span>
+      </div>
+      <button type="button" class="btn-primary rv-gray-confirm" id="rv-gray-confirm">确认</button>
+    </div>
+  </div>
+
+  <script src="data.js?v=20260811r2"></script>
+  <script src="release-data.js?v=20260811r7"></script>
+  <script src="release.js?v=20260811r55"></script>
+</body>
+</html>

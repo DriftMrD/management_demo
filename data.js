@@ -1038,6 +1038,10 @@ function rebuildIterationsFromGantt() {
       actualDates: prev && prev.actualDates ? { ...prev.actualDates } : undefined,
       overdueCompleted: !!(prev && prev.overdueCompleted),
       wasOverdue: !!(prev && prev.wasOverdue),
+      // 研测填写的 APK 需跨重建保留，供版本发布看板同步
+      apkUrl: prev && prev.apkUrl != null ? prev.apkUrl : undefined,
+      apkVersion: prev && prev.apkVersion != null ? prev.apkVersion : undefined,
+      apkFilledAt: prev && prev.apkFilledAt ? prev.apkFilledAt : undefined,
     });
   });
   ITERATIONS.length = 0;
@@ -1048,6 +1052,9 @@ function rebuildIterationsFromGantt() {
       return iterationNum(a.name) - iterationNum(b.name);
     })
     .forEach((it) => ITERATIONS.push(it));
+  if (typeof applyPersistedApkToIterations === "function") {
+    applyPersistedApkToIterations();
+  }
 }
 
 rebuildIterationsFromGantt();
@@ -2144,3 +2151,56 @@ function getRdWorkspaceRow(it) {
     apkVersion: metrics.apkVersion,
   };
 }
+
+/** 研测 APK 填写持久化（跨刷新，供版本发布看板同步） */
+const RD_APK_STORAGE_KEY = "rd_iteration_apk_v1";
+
+function iterationKey(product, name) {
+  return `${product || ""}||${name || ""}`;
+}
+
+function loadRdApkMap() {
+  try {
+    const raw = localStorage.getItem(RD_APK_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveRdApkMap(map) {
+  localStorage.setItem(RD_APK_STORAGE_KEY, JSON.stringify(map || {}));
+}
+
+function persistIterationApk(it) {
+  if (!it || !it.product || !it.name) return;
+  const map = loadRdApkMap();
+  const key = iterationKey(it.product, it.name);
+  const apkUrl = it.apkUrl != null ? String(it.apkUrl).trim() : "";
+  const apkVersion = it.apkVersion != null ? String(it.apkVersion).trim() : "";
+  if (!apkUrl && !apkVersion) {
+    delete map[key];
+  } else {
+    map[key] = {
+      apkUrl,
+      apkVersion,
+      apkFilledAt: it.apkFilledAt || todayISO(),
+    };
+  }
+  saveRdApkMap(map);
+}
+
+function applyPersistedApkToIterations() {
+  const map = loadRdApkMap();
+  ITERATIONS.forEach((it) => {
+    const saved = map[iterationKey(it.product, it.name)];
+    if (!saved) return;
+    if (saved.apkUrl != null) it.apkUrl = saved.apkUrl;
+    if (saved.apkVersion != null) it.apkVersion = saved.apkVersion;
+    if (saved.apkFilledAt) it.apkFilledAt = saved.apkFilledAt;
+  });
+}
+
+applyPersistedApkToIterations();
