@@ -1,4 +1,9 @@
 (() => {
+  function getViewFromUrl() {
+    const v = new URLSearchParams(window.location.search).get("view");
+    return v === "journey" ? "journey" : "list";
+  }
+
   const state = {
     product: "全部",
     status: "全部",
@@ -7,6 +12,11 @@
     pageSize: 10,
     sortKey: null,
     sortAsc: true,
+    view: getViewFromUrl(),
+    journeyExpandedId: null,
+    journeyAddReqSearch: "",
+    journeyReqPickerOpen: false,
+    month: "全部",
     rows: [],
     detailId: null,
     detailExtraReqIds: [],
@@ -149,6 +159,9 @@
     let rows = state.rows.slice();
     if (state.product !== "全部") rows = rows.filter((r) => r.product === state.product);
     if (state.status !== "全部") rows = rows.filter((r) => r.status === state.status);
+    if (state.view === "journey" && state.month !== "全部") {
+      rows = rows.filter((r) => monthKeyFromDate(r.releaseTime) === state.month);
+    }
     const q = state.search.trim().toLowerCase();
     if (q) rows = rows.filter((r) => String(r.version).toLowerCase().includes(q));
 
@@ -165,6 +178,15 @@
       return defaultReleaseSort(a, b);
     });
     return rows;
+  }
+
+  function getReleaseMonthOptions() {
+    const set = new Set();
+    (state.rows.length ? state.rows : typeof getReleases === "function" ? getReleases() : []).forEach((r) => {
+      const key = monthKeyFromDate(r.releaseTime);
+      if (key && key !== "unknown") set.add(key);
+    });
+    return ["全部", ...[...set].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))];
   }
 
   function updateSortHeaders() {
@@ -244,9 +266,808 @@
       .join("");
   }
 
+  function syncViewUrl(view, { replace = false } = {}) {
+    const url = new URL(window.location.href);
+    if (view === "journey") url.searchParams.set("view", "journey");
+    else url.searchParams.delete("view");
+    const method = replace ? "replaceState" : "pushState";
+    history[method]({ ...(history.state || {}), view }, "", url);
+  }
+
+  function syncViewToggle() {
+    document.querySelectorAll("#release-view-toggle .toggle-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === state.view);
+    });
+  }
+
+  function formatApkSizeLabel(row) {
+    if (row && row.apkSize) return String(row.apkSize);
+    const seed = String((row && row.version) || (row && row.id) || "apk");
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    const mb = (28 + (h % 280) / 10).toFixed(1);
+    return `${mb}MB`;
+  }
+
+  function formatShortDate(iso) {
+    const m = String(iso || "").match(/^\d{4}-(\d{2})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}` : iso || "—";
+  }
+
+  function monthKeyFromDate(iso) {
+    const m = String(iso || "").match(/^(\d{4})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}` : "unknown";
+  }
+
+  function monthLabelFromKey(key) {
+    if (!key || key === "unknown") return "未定日期";
+    const [y, m] = key.split("-");
+    return `${y}年${Number(m)}月`;
+  }
+
+  function getJourneySortDate(row) {
+    return row.releaseTime || "";
+  }
+
+  function compareJourneyByReleaseTime(a, b) {
+    const ta = a && a.releaseTime ? String(a.releaseTime) : "";
+    const tb = b && b.releaseTime ? String(b.releaseTime) : "";
+    if (ta && !tb) return -1;
+    if (!ta && tb) return 1;
+    if (ta !== tb) return ta < tb ? 1 : -1;
+    return String(b.version || "").localeCompare(String(a.version || ""));
+  }
+
+  function getCurrentOnlineIdSet(rows) {
+    const byProduct = new Map();
+    rows.forEach((r) => {
+      if (!r || r.status !== "已发布") return;
+      if (!isFullGray(r)) return;
+      const prev = byProduct.get(r.product);
+      if (!prev || compareReleaseByReleaseTimeDesc(r, prev) < 0) {
+        byProduct.set(r.product, r);
+      }
+    });
+    return new Set([...byProduct.values()].map((r) => r.id));
+  }
+
+  function getJourneyReqs(row) {
+    return collectReleaseReqs(
+      row,
+      Array.isArray(row.extraReqIds) ? row.extraReqIds : [],
+      !!row.includeGapReqs,
+      Array.isArray(row.excludedReqIds) ? row.excludedReqIds : []
+    );
+  }
+
+  function formatContentBullets(text) {
+    const raw = String(text || "").trim();
+    if (!raw) return "";
+    return raw
+      .split(/\n+|；|;/)
+      .map((line) => line.replace(/^\d+\.\s*/, "").replace(/^•\s*/, "").trim())
+      .filter(Boolean)
+      .map((line) => `• ${escapeHtml(line)}`)
+      .join("<br />");
+  }
+
+  function journeyPlannedChannels(row) {
+    if (typeof listReleaseChannels === "function") return listReleaseChannels(row && row.channel);
+    return parseChannels(row && row.channel);
+  }
+
+  function buildJourneyGrayRatio(row) {
+    const channels = journeyPlannedChannels(row);
+    if (!channels.length) {
+      return `<div class="rj-gray-ratio-empty rv-empty">暂无放量比例</div>`;
+    }
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    const valueMap = {};
+    grays.forEach((g) => {
+      if (g && g.channel) valueMap[g.channel] = g.value;
+    });
+    // 只展示计划渠道；没有值时为 0；进度条可拖拽调整（全量锁定）
+    return `<div class="rj-gray-ratio-stack">${channels
+      .map((ch) => {
+        const value = valueMap[ch] != null ? valueMap[ch] : 0;
+        const kind = typeof channelGrayKind === "function" ? channelGrayKind(ch) : "percent";
+        const ratio = Math.round(channelGrayRatio(ch, value));
+        const valueText = formatChannelGray(ch, value);
+        const full = ratio >= 100 || value >= channelGrayMax(ch);
+        const title = kind === "volume" ? `${ch} 放量` : `${ch} 灰度`;
+        return `<div class="rj-gray-ratio-card is-${escapeHtml(ch.toLowerCase())}${
+          full ? " is-full-locked" : ""
+        }" data-gray-id="${escapeHtml(row.id)}" data-channel="${escapeHtml(ch)}">
+          <span class="rj-gray-ratio-label">${escapeHtml(title)}</span>
+          <div
+            class="rj-gray-ratio-track"
+            role="slider"
+            tabindex="${full ? -1 : 0}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${ratio}"
+            aria-label="${escapeHtml(title)}"
+            aria-disabled="${full ? "true" : "false"}"
+            data-rj-gray-drag="1"
+            data-id="${escapeHtml(row.id)}"
+            data-channel="${escapeHtml(ch)}"
+            data-kind="${escapeHtml(kind)}"
+            data-ratio="${ratio}"
+            style="--rj-gray-pct: ${ratio}%"
+          >
+            <span class="rj-gray-ratio-fill" aria-hidden="true"></span>
+            <span class="rj-gray-ratio-thumb" aria-hidden="true"${full ? " hidden" : ""}></span>
+          </div>
+          <span class="rj-gray-ratio-value" data-rj-gray-value>${escapeHtml(valueText)}</span>
+        </div>`;
+      })
+      .join("")}</div>`;
+  }
+
+  const journeyGrayDragState = {
+    active: false,
+    track: null,
+    pointerId: null,
+  };
+
+  function journeyGrayValueFromRatio(channel, ratioPct) {
+    const ch = String(channel || "").toUpperCase();
+    const pct = Math.round(Math.max(0, Math.min(100, Number(ratioPct) || 0)));
+    const kind = typeof channelGrayKind === "function" ? channelGrayKind(ch) : "percent";
+    if (kind === "binary") return pct >= 50 ? channelGrayMax(ch) : 0;
+    if (kind === "percent") return clampChannelGray(ch, pct);
+    return clampChannelGray(ch, Math.round((pct / 100) * channelGrayMax(ch)));
+  }
+
+  function ratioFromJourneyGrayPointer(track, clientX) {
+    const rect = track.getBoundingClientRect();
+    if (!rect.width) return 0;
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    const kind = track.dataset.kind || channelGrayKind(track.dataset.channel || "GP");
+    if (kind === "binary") return pct >= 50 ? 100 : 0;
+    return Math.round(pct);
+  }
+
+  function syncJourneyGrayDragPreview(track, ratioPct) {
+    if (!track) return;
+    const ch = track.dataset.channel || "GP";
+    const ratio = Math.round(Math.max(0, Math.min(100, Number(ratioPct) || 0)));
+    const value = journeyGrayValueFromRatio(ch, ratio);
+    const nextRatio = Math.round(channelGrayRatio(ch, value));
+    const full = nextRatio >= 100 || value >= channelGrayMax(ch);
+    track.dataset.ratio = String(nextRatio);
+    track.style.setProperty("--rj-gray-pct", `${nextRatio}%`);
+    track.setAttribute("aria-valuenow", String(nextRatio));
+    const thumb = track.querySelector(".rj-gray-ratio-thumb");
+    if (thumb) thumb.hidden = full;
+    const card = track.closest(".rj-gray-ratio-card");
+    const valueEl = card && card.querySelector("[data-rj-gray-value]");
+    if (valueEl) valueEl.textContent = formatChannelGray(ch, value);
+    const tone = grayTone(nextRatio);
+    if (card) {
+      card.classList.toggle("is-full-preview", full);
+      card.classList.remove("is-zero", "is-low", "is-mid", "is-full");
+      if (tone) card.classList.add(tone);
+    }
+    return { value, ratio: nextRatio, full };
+  }
+
+  function commitJourneyGrayDrag(track) {
+    if (!track) return;
+    const id = track.dataset.id;
+    const ch = track.dataset.channel || "";
+    if (!id || !ch) return;
+    const row = getReleaseById(id);
+    // 仅拒绝「拖拽前已全量」；拖到全量本身仍需提交
+    if (row && isFullGray(row, ch)) return;
+    const preview = syncJourneyGrayDragPreview(track, track.dataset.ratio);
+    if (!preview) return;
+    applyGrayPercent(id, preview.value, { date: todayISO(), channel: ch });
+  }
+
+  function endJourneyGrayDrag(e) {
+    if (!journeyGrayDragState.active) return;
+    const track = journeyGrayDragState.track;
+    const pointerId = journeyGrayDragState.pointerId;
+    if (track && pointerId != null) {
+      try {
+        track.releasePointerCapture(pointerId);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    if (track) track.classList.remove("is-dragging");
+    journeyGrayDragState.active = false;
+    journeyGrayDragState.track = null;
+    journeyGrayDragState.pointerId = null;
+    if (track) commitJourneyGrayDrag(track);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  function buildJourneyRolloutTimeline(row) {
+    const { nodes, grays } = prepareTimelineNodes(row);
+    if (!nodes.length) {
+      return `<span class="rv-empty">暂无放量记录</span>`;
+    }
+    const groups = groupTimelineByDate(nodes, grays);
+    if (!groups.length) {
+      return `<span class="rv-empty">暂无放量记录</span>`;
+    }
+    return `<div class="rj-rollout-timeline">${groups
+      .map((group, i) => {
+        const channelList = [...group.channels.entries()].map(([channel, value]) => ({ channel, value }));
+        const isPending = !!group.pending;
+        const isCurrent = !!group.current && !isPending;
+        const isShared = !isPending && (group.plan || channelList.length !== 1);
+        const onlyCh = !isShared && channelList[0] ? String(channelList[0].channel).toLowerCase() : "";
+        const cls = ["rj-rollout-node"];
+        if (i === 0) cls.push("is-first");
+        if (i === groups.length - 1) cls.push("is-last");
+        if (isCurrent) cls.push("is-current");
+        if (isPending) cls.push("is-pending");
+        if (group.plan) cls.push("is-plan");
+        if (isShared) cls.push("is-shared");
+        if (onlyCh === "gp" || onlyCh === "ps" || onlyCh === "pa") cls.push(`is-${onlyCh}`);
+        const dateText = isPending ? "—" : group.date || "—";
+        const parts = [];
+        if (group.plan) {
+          parts.push(`<span class="release-timeline-shared-label">进入计划中</span>`);
+        }
+        if (channelList.length) {
+          parts.push(
+            `<span class="release-timeline-pills">${channelList
+              .map((g) => channelGrayPill(g.channel, g.value))
+              .join("")}</span>`
+          );
+        } else if (isPending) {
+          parts.push(`<span class="release-timeline-shared-label">全量</span>`);
+        }
+        return `
+        <div class="${cls.join(" ")}">
+          <div class="rj-rollout-date">${escapeHtml(dateText)}</div>
+          <div class="rj-rollout-mid" aria-hidden="true">
+            <span class="rj-rollout-line is-left"></span>
+            <span class="rj-rollout-indicator"></span>
+            <span class="rj-rollout-line is-right"></span>
+          </div>
+          <div class="rj-rollout-detail">${parts.join("")}</div>
+        </div>`;
+      })
+      .join("")}</div>`;
+  }
+
+  function buildJourneyReqTable(row) {
+    const reqs = getJourneyReqs(row);
+    if (!reqs.length) {
+      return `<div class="rj-req-empty">当前版本暂无需求</div>`;
+    }
+    const baseIds = new Set(getBaseReleaseReqs(row).map((r) => r.id));
+    return `
+      <div class="rj-req-table-wrap">
+        <table class="rj-req-table">
+          <thead>
+            <tr>
+              <th>所属需求</th>
+              <th>价值点</th>
+              <th>优先级</th>
+              <th>落地类型</th>
+              <th>落地版本</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reqs
+              .map((req) => {
+                const code = getReleaseReqCode(req);
+                const typeLabel = landingTypeLabel(req.type);
+                const typeCls = landingTypeClass(req.type);
+                const extra = !baseIds.has(req.id);
+                return `<tr class="${extra ? "is-extra" : ""}">
+                  <td>
+                    <div class="rj-req-title">${escapeHtml(req.title || "-")}</div>
+                    <div class="rj-req-code">${escapeHtml(code || "—")}</div>
+                  </td>
+                  <td>${req.isValue ? "是" : "—"}</td>
+                  <td>${escapeHtml(req.priority || "—")}</td>
+                  <td><span class="release-plan-pill ${typeCls}">${escapeHtml(typeLabel)}</span></td>
+                  <td>${escapeHtml(req.version || "—")}</td>
+                  <td class="rj-req-ops">
+                    <button type="button" class="release-plan-req-del" data-action="rj-req-del" data-id="${escapeHtml(
+                      row.id
+                    )}" data-req-id="${req.id}" title="删除" aria-label="删除">
+                      <img src="assets/icons/trash.svg" alt="" />
+                    </button>
+                  </td>
+                </tr>`;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function buildJourneyReqSelect(row) {
+    return `
+      <div class="release-req-select rj-req-select" data-id="${escapeHtml(row.id)}">
+        <button type="button" class="release-req-select-btn" data-action="rj-req-add" data-id="${escapeHtml(
+          row.id
+        )}">
+          <span>添加需求</span>
+          <img src="assets/icons/chevron-down.svg" alt="" />
+        </button>
+        <div class="release-req-select-menu" data-rj-req-menu hidden>
+          <div class="release-req-select-search">
+            <img src="assets/icons/search.svg" alt="" />
+            <input type="search" data-rj-req-search placeholder="搜索需求编号或名称" autocomplete="off" />
+          </div>
+          <div class="release-req-select-list" data-rj-req-list></div>
+        </div>
+      </div>`;
+  }
+
+  function renderJourneyAddReqPicker(releaseId) {
+    const card = document.querySelector(`.rj-card[data-journey-id="${CSS.escape(releaseId)}"]`);
+    if (!card) return;
+    const list = card.querySelector("[data-rj-req-list]");
+    const row = getReleaseById(releaseId);
+    if (!list || !row) return;
+    const picked = new Set(getJourneyReqs(row).map((r) => r.id));
+    const q = String(state.journeyAddReqSearch || "").trim().toLowerCase();
+    const items = getPickerReqs(row).filter((req) => {
+      if (!q) return true;
+      const code = getReleaseReqCode(req).toLowerCase();
+      const title = String(req.title || "").toLowerCase();
+      return title.includes(q) || code.includes(q);
+    });
+    if (!items.length) {
+      list.innerHTML = `<p class="release-req-select-empty">暂无可添加需求</p>`;
+      return;
+    }
+    list.innerHTML = items
+      .map((req) => {
+        const on = picked.has(req.id);
+        return `<button type="button" class="release-req-select-item${on ? " is-on" : ""}" data-action="rj-req-toggle" data-id="${escapeHtml(
+          releaseId
+        )}" data-req-id="${req.id}">
+          <span class="plan-check ${on ? "is-on" : ""}" aria-hidden="true"></span>
+          <span class="release-req-select-code">${escapeHtml(getReleaseReqCode(req))}</span>
+          <span class="release-req-select-title">${escapeHtml(req.title || "-")}</span>
+        </button>`;
+      })
+      .join("");
+  }
+
+  function closeJourneyAddReqPicker() {
+    state.journeyReqPickerOpen = false;
+    state.journeyAddReqSearch = "";
+    document.querySelectorAll("[data-rj-req-menu]").forEach((menu) => {
+      menu.hidden = true;
+    });
+  }
+
+  function openJourneyAddReqPicker(releaseId) {
+    const card = document.querySelector(`.rj-card[data-journey-id="${CSS.escape(releaseId)}"]`);
+    if (!card) return;
+    const menu = card.querySelector("[data-rj-req-menu]");
+    const search = card.querySelector("[data-rj-req-search]");
+    if (!menu) return;
+    closeJourneyAddReqPicker();
+    state.journeyReqPickerOpen = true;
+    state.journeyAddReqSearch = "";
+    if (search) search.value = "";
+    renderJourneyAddReqPicker(releaseId);
+    menu.hidden = false;
+    if (search) search.focus();
+  }
+
+  function toggleJourneyAddReqPicker(releaseId) {
+    const card = document.querySelector(`.rj-card[data-journey-id="${CSS.escape(releaseId)}"]`);
+    const menu = card && card.querySelector("[data-rj-req-menu]");
+    if (!menu) return;
+    if (!menu.hidden && state.journeyReqPickerOpen) {
+      closeJourneyAddReqPicker();
+      return;
+    }
+    openJourneyAddReqPicker(releaseId);
+  }
+
+  function toggleJourneyReq(releaseId, reqId) {
+    const row = getReleaseById(releaseId);
+    if (!row) return;
+    const num = Number(reqId);
+    if (!num) return;
+    const extra = Array.isArray(row.extraReqIds) ? row.extraReqIds.map(Number).filter(Boolean) : [];
+    const excluded = Array.isArray(row.excludedReqIds)
+      ? row.excludedReqIds.map(Number).filter(Boolean)
+      : [];
+    const pinned = new Set([
+      ...getBaseReleaseReqs(row).map((r) => r.id),
+      ...(row.includeGapReqs ? getGapReleaseReqs(row).map((r) => r.id) : []),
+    ]);
+    let nextExtra = extra;
+    let nextExcluded = excluded;
+    if (pinned.has(num)) {
+      nextExcluded = excluded.includes(num)
+        ? excluded.filter((x) => x !== num)
+        : [...excluded, num];
+    } else {
+      nextExtra = extra.includes(num) ? extra.filter((x) => x !== num) : [...extra, num];
+    }
+    upsertRelease({ ...row, extraReqIds: nextExtra, excludedReqIds: nextExcluded });
+    const keepPicker = state.journeyReqPickerOpen;
+    const keepSearch = state.journeyAddReqSearch;
+    reloadRows();
+    renderJourney();
+    if (state.detailId === releaseId) {
+      const next = getReleaseById(releaseId);
+      if (next) {
+        state.detailExtraReqIds = Array.isArray(next.extraReqIds)
+          ? next.extraReqIds.map(Number).filter(Boolean)
+          : [];
+        state.detailExcludedReqIds = Array.isArray(next.excludedReqIds)
+          ? next.excludedReqIds.map(Number).filter(Boolean)
+          : [];
+        fillDetail(next);
+      }
+    }
+    if (keepPicker) {
+      state.journeyReqPickerOpen = true;
+      state.journeyAddReqSearch = keepSearch;
+      const card = document.querySelector(`.rj-card[data-journey-id="${CSS.escape(releaseId)}"]`);
+      const menu = card && card.querySelector("[data-rj-req-menu]");
+      const search = card && card.querySelector("[data-rj-req-search]");
+      if (menu) {
+        if (search) search.value = keepSearch;
+        renderJourneyAddReqPicker(releaseId);
+        menu.hidden = false;
+      }
+    }
+  }
+
+  function groupRowsByMonth(rows) {
+    const map = new Map();
+    rows.forEach((row) => {
+      const key = monthKeyFromDate(getJourneySortDate(row));
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(row);
+    });
+    const keys = [...map.keys()].sort((a, b) => {
+      if (a === "unknown") return 1;
+      if (b === "unknown") return -1;
+      return a < b ? 1 : a > b ? -1 : 0;
+    });
+    return keys.map((key) => ({
+      key,
+      label: monthLabelFromKey(key),
+      rows: map.get(key).slice().sort(compareJourneyByReleaseTime),
+    }));
+  }
+
+  function renderJourneyStatusCluster(row) {
+    if (row.status === "不涉及") {
+      return `<div class="rv-status-publish">
+        <button type="button" class="rv-status-plane" data-action="status-publish" data-id="${escapeHtml(
+          row.id
+        )}" title="发布" aria-label="发布">
+          <img src="assets/icons/send-muted.svg" alt="" />
+        </button>
+        <span class="rv-status-badge ${statusClass(row.status)}">${escapeHtml(row.status)}</span>
+      </div>`;
+    }
+    const channels = journeyPlannedChannels(row);
+    const grays = typeof normalizeChannelGrays === "function" ? normalizeChannelGrays(row) : [];
+    const valueMap = {};
+    grays.forEach((g) => {
+      if (g && g.channel) valueMap[g.channel] = g.value;
+    });
+    // 右侧只写计划渠道；没有值时为 0
+    const parts = channels.map((ch) => channelGrayPill(ch, valueMap[ch] != null ? valueMap[ch] : 0));
+    parts.push(`<span class="rv-status-badge ${statusClass(row.status)}">${escapeHtml(row.status)}</span>`);
+    return parts.join("");
+  }
+
+  function renderJourneyCardHeader(row) {
+    return `
+      <div class="rj-card-main">
+        <div class="rj-card-left">
+          <span class="rj-product-pill">${escapeHtml(row.product || "—")}</span>
+          <strong class="rj-version">${escapeHtml(row.version || "—")}</strong>
+        </div>
+        <div class="rj-card-right">
+          ${renderJourneyStatusCluster(row)}
+        </div>
+      </div>`;
+  }
+
+  function renderJourneyFieldActions(row, field, { remind = false } = {}) {
+    // 不涉及 / 新增未发布：不展示编辑与提醒
+    if (!row || row.status === "不涉及") return "";
+    return `
+      <div class="rj-detail-actions">
+        ${
+          remind
+            ? `<button type="button" class="rj-inline-action" data-action="rj-remind" data-id="${escapeHtml(
+                row.id
+              )}" title="提醒填写数据" aria-label="提醒">
+            <img src="assets/icons/remind.svg" alt="" />
+          </button>`
+            : ""
+        }
+        <button type="button" class="rj-inline-action" data-action="rj-edit-${escapeHtml(
+          field
+        )}" data-id="${escapeHtml(row.id)}" title="编辑" aria-label="编辑">
+          <img src="assets/icons/pencil.svg" alt="" />
+        </button>
+      </div>`;
+  }
+
+  function renderJourneyCardDetails(row) {
+    const content = formatContentBullets(row.releaseNote);
+    const reqs = getJourneyReqs(row);
+    const apkLabel = formatApkSizeLabel(row);
+    const apkHref = row.apkUrl || "#";
+    const goalText = String(row.versionGoal || "").trim();
+    const dataText = String(row.dataInfo || "").trim();
+    const showDetailGrid = row.status !== "不涉及";
+    const detailGrid = showDetailGrid
+      ? `
+        <div class="rj-detail-quad">
+          <div class="rj-detail-cell">
+            <div class="rj-detail-cell-head">
+              <span class="rj-detail-label">版本目标</span>
+              ${renderJourneyFieldActions(row, "goal")}
+            </div>
+            <div class="rj-detail-value" data-rj-field="goal">${
+              goalText ? escapeHtml(goalText) : `<span class="rv-empty">暂无版本目标</span>`
+            }</div>
+          </div>
+          <div class="rj-detail-cell">
+            <div class="rj-detail-cell-head">
+              <span class="rj-detail-label">版本内容</span>
+              ${renderJourneyFieldActions(row, "note")}
+            </div>
+            <div class="rj-detail-value" data-rj-field="note">${
+              content || `<span class="rv-empty">暂无 Release Note</span>`
+            }</div>
+          </div>
+          <div class="rj-detail-cell">
+            <div class="rj-detail-cell-head">
+              <span class="rj-detail-label">数据</span>
+              ${renderJourneyFieldActions(row, "data", { remind: true })}
+            </div>
+            <div class="rj-detail-value" data-rj-field="data">${
+              dataText ? escapeHtml(dataText) : `<span class="rv-empty">暂无数据信息</span>`
+            }</div>
+          </div>
+          <div class="rj-detail-cell rj-detail-cell-ratio">
+            <div class="rj-detail-cell-head">
+              <span class="rj-detail-label">放量比例</span>
+            </div>
+            <div class="rj-detail-value">${buildJourneyGrayRatio(row)}</div>
+          </div>
+        </div>
+        <div class="rj-rollout-section">
+          <div class="rj-rollout-head">
+            <span class="rj-req-title-label">放量时间线</span>
+          </div>
+          <div class="rj-rollout-body">${buildJourneyRolloutTimeline(row)}</div>
+        </div>
+        <div class="rj-section-gap"></div>`
+      : "";
+    return `
+      <div class="rj-card-detail">
+        <div class="rj-divider"></div>
+        ${detailGrid}
+        <div class="rj-req-section">
+          <div class="rj-req-head">
+            <div class="rj-req-head-left">
+              <span class="rj-req-title-label">版本需求</span>
+              <span class="rj-req-count">${reqs.length}项</span>
+            </div>
+            ${buildJourneyReqSelect(row)}
+          </div>
+          ${buildJourneyReqTable(row)}
+        </div>
+        <div class="rj-divider"></div>
+        <div class="rj-card-footer">
+          <a class="rj-footer-btn" href="${escapeHtml(apkHref)}" target="_blank" rel="noopener" data-action="apk" data-id="${escapeHtml(
+            row.id
+          )}" ${row.apkUrl ? "" : 'aria-disabled="true"'}>
+            <img src="assets/icons/download.svg" alt="" width="13" height="13" />
+            <span>APK: ${escapeHtml(apkLabel)}</span>
+          </a>
+        </div>
+      </div>`;
+  }
+
+  function journeyFieldMeta(field) {
+    if (field === "goal") {
+      return {
+        key: "versionGoal",
+        placeholder: "请填写版本目标",
+        requiredWhenPlanning: true,
+        requiredToast: "计划中必须填写版本目标",
+        savedToast: "版本目标已保存",
+      };
+    }
+    if (field === "note") {
+      return {
+        key: "releaseNote",
+        placeholder: "请填写版本内容",
+        requiredWhenPlanning: true,
+        requiredToast: "计划中必须填写 Release Note",
+        savedToast: "版本内容已保存",
+      };
+    }
+    return {
+      key: "dataInfo",
+      placeholder: "请填写数据信息",
+      requiredWhenPlanning: false,
+      requiredToast: "",
+      savedToast: "数据信息已保存",
+    };
+  }
+
+  function saveJourneyFieldInline(ta) {
+    if (!ta) return;
+    const field = ta.dataset.rjEditor;
+    const id = ta.dataset.id;
+    if (!field || !id) return;
+    const meta = journeyFieldMeta(field);
+    const row = getReleaseById(id);
+    if (!row) return;
+    const next = String(ta.value || "").trim();
+    if (meta.requiredWhenPlanning && row.status === "计划中" && !next) {
+      showToast(meta.requiredToast);
+      ta.focus();
+      return;
+    }
+    if (next === String(row[meta.key] || "").trim()) {
+      renderJourney();
+      return;
+    }
+    upsertRelease({ ...row, [meta.key]: next });
+    showToast(meta.savedToast);
+    reloadRows();
+    renderJourney();
+    if (state.detailId === id) fillDetail(getReleaseById(id));
+  }
+
+  function beginJourneyFieldEdit(id, field) {
+    const row = getReleaseById(id);
+    if (!row) return;
+    const card = document.querySelector(`.rj-card[data-journey-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    const valueEl = card.querySelector(`[data-rj-field="${field}"]`);
+    if (!valueEl) return;
+    if (valueEl.classList.contains("is-editing")) {
+      valueEl.querySelector(".rj-inline-editor")?.focus();
+      return;
+    }
+    const meta = journeyFieldMeta(field);
+    // 展示态与编辑态同盒模型，锁定高度避免切换时文字跳动
+    const lockedHeight = Math.max(Math.ceil(valueEl.getBoundingClientRect().height), 24);
+    valueEl.classList.add("is-editing");
+    valueEl.style.height = `${lockedHeight}px`;
+    valueEl.style.minHeight = `${lockedHeight}px`;
+    valueEl.innerHTML = `<textarea class="release-note-editor rj-inline-editor" data-rj-editor="${escapeHtml(
+      field
+    )}" data-id="${escapeHtml(id)}" placeholder="${escapeHtml(meta.placeholder)}">${escapeHtml(
+      row[meta.key] || ""
+    )}</textarea>`;
+    const ta = valueEl.querySelector(".rj-inline-editor");
+    if (!ta) return;
+    ta.style.height = "100%";
+    ta.style.minHeight = "100%";
+    ta.focus();
+    const len = ta.value.length;
+    ta.setSelectionRange(len, len);
+    ta.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (state.noteSaving) return;
+        saveJourneyFieldInline(ta);
+      }, 120);
+    });
+    ta.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        ta.blur();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        renderJourney();
+      }
+    });
+    ta.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  function renderJourneyCard(row, { expanded }) {
+    const releaseTime = row.releaseTime || "—";
+    return `
+      <article class="rj-card${expanded ? " is-expanded" : " is-collapsed"}" data-journey-id="${escapeHtml(
+        row.id
+      )}" ${expanded ? "" : 'role="button" tabindex="0"'}>
+        <div class="rj-marker${expanded ? " is-active" : ""}" data-tip="${escapeHtml(releaseTime)}" aria-label="首次释放时间 ${escapeHtml(
+          releaseTime
+        )}"></div>
+        ${renderJourneyCardHeader(row)}
+        ${expanded ? renderJourneyCardDetails(row) : ""}
+      </article>`;
+  }
+
+  function renderJourney() {
+    const body = document.getElementById("release-journey-body");
+    if (!body) return;
+    const rows = getFilteredRows().slice().sort(compareJourneyByReleaseTime);
+    if (!rows.length) {
+      body.innerHTML = `<div class="feedback-empty">暂无版本历程</div>`;
+      return;
+    }
+
+    const onlineIds = getCurrentOnlineIdSet(rows);
+    const months = groupRowsByMonth(rows);
+    if (!state.journeyExpandedId || !rows.some((r) => r.id === state.journeyExpandedId)) {
+      const preferred =
+        rows.find((r) => onlineIds.has(r.id)) ||
+        rows.find((r) => r.status === "已发布") ||
+        rows[0];
+      state.journeyExpandedId = preferred ? preferred.id : null;
+    }
+
+    body.innerHTML = `
+      <div class="release-journey-timeline">
+        ${months
+          .map(
+            (month) => `
+          <section class="rj-month">
+            <header class="rj-month-header">
+              <h3 class="rj-month-title">${escapeHtml(month.label)}</h3>
+              <span class="rj-month-count">${month.rows.length}个版本</span>
+              <span class="rj-month-line" aria-hidden="true"></span>
+            </header>
+            <div class="rj-month-items">
+              ${month.rows
+                .map((row) =>
+                  renderJourneyCard(row, {
+                    expanded: row.id === state.journeyExpandedId,
+                  })
+                )
+                .join("")}
+            </div>
+          </section>`
+          )
+          .join("")}
+      </div>`;
+  }
+
   function render() {
     reloadRows();
+    syncViewToggle();
+    const listView = document.getElementById("release-list-view");
+    const journeyView = document.getElementById("release-journey-view");
+    const monthFilter = document.getElementById("release-month-filter-wrap");
+    const pagination = document.getElementById("release-pagination-bar");
+    const isJourney = state.view === "journey";
+    if (listView) listView.hidden = isJourney;
+    if (journeyView) journeyView.hidden = !isJourney;
+    if (monthFilter) monthFilter.hidden = !isJourney;
+    if (pagination) pagination.hidden = isJourney;
+
+    const monthLabel = document.getElementById("release-month-value");
+    if (monthLabel) monthLabel.textContent = state.month || "全部";
+    const monthTitle = document.querySelector(".release-month-label");
+    if (monthTitle) monthTitle.hidden = state.month !== "全部";
+
     const rows = getFilteredRows();
+    if (isJourney) {
+      renderJourney();
+      return;
+    }
     renderPagination(rows.length);
     const start = (state.page - 1) * state.pageSize;
     renderRows(rows.slice(start, start + state.pageSize));
@@ -440,6 +1261,9 @@
       e.stopPropagation();
       if (key === "product" && typeof getReleaseProducts === "function") {
         fillOptions(getReleaseProducts());
+      }
+      if (key === "month") {
+        fillOptions(getReleaseMonthOptions());
       }
       document.querySelectorAll(".dropdown").forEach((d) => {
         if (d !== dropdown) d.hidden = true;
@@ -1900,6 +2724,197 @@
       }
     });
 
+    const journeyBody = document.getElementById("release-journey-body");
+    if (journeyBody) {
+      journeyBody.addEventListener("click", (e) => {
+        if (
+          e.target.closest(".rj-inline-editor") ||
+          e.target.closest("[data-rj-req-search]") ||
+          e.target.closest("[data-rj-gray-drag]")
+        ) {
+          e.stopPropagation();
+          return;
+        }
+        if (e.target.closest(".rj-req-select")) {
+          e.stopPropagation();
+        }
+        const actionBtn = e.target.closest("[data-action]");
+        if (actionBtn) {
+          const id = actionBtn.dataset.id;
+          const action = actionBtn.dataset.action;
+          if (action === "status-publish") {
+            e.preventDefault();
+            e.stopPropagation();
+            openEdit(id, { pendingStatus: "计划中" });
+            return;
+          }
+          if (action === "edit") {
+            e.preventDefault();
+            e.stopPropagation();
+            openEdit(id);
+            return;
+          }
+          if (action === "apk") {
+            e.stopPropagation();
+            return;
+          }
+          if (action === "rj-remind") {
+            e.preventDefault();
+            e.stopPropagation();
+            showToast("已发送填写数据信息提醒");
+            return;
+          }
+          if (action === "gray-edit") {
+            e.preventDefault();
+            e.stopPropagation();
+            const channel = actionBtn.dataset.channel || "";
+            const cell = actionBtn.closest(".rv-gray-cell");
+            if (!cell) return;
+            if (grayPopoverState.open && grayPopoverState.id === id && grayPopoverState.channel === channel) {
+              hideGrayPopover(0);
+              return;
+            }
+            showGrayPopover(id, cell, channel);
+            return;
+          }
+          if (action === "rj-req-add") {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleJourneyAddReqPicker(id);
+            return;
+          }
+          if (action === "rj-req-toggle" || action === "rj-req-del") {
+            e.preventDefault();
+            e.stopPropagation();
+            const reqId = actionBtn.dataset.reqId;
+            if (action === "rj-req-del") closeJourneyAddReqPicker();
+            toggleJourneyReq(id, reqId);
+            if (action === "rj-req-del") showToast("已移除需求");
+            return;
+          }
+          if (action === "rj-edit-goal" || action === "rj-edit-note" || action === "rj-edit-data") {
+            e.preventDefault();
+            e.stopPropagation();
+            const field = action.replace("rj-edit-", "");
+            beginJourneyFieldEdit(id, field);
+            return;
+          }
+        }
+
+        if (!e.target.closest(".rj-req-select")) {
+          closeJourneyAddReqPicker();
+        }
+
+        const card = e.target.closest("[data-journey-id]");
+        if (!card) return;
+        const id = card.dataset.journeyId;
+        if (!id) return;
+        if (state.journeyExpandedId === id) return;
+        closeJourneyAddReqPicker();
+        state.journeyExpandedId = id;
+        renderJourney();
+      });
+
+      journeyBody.addEventListener("input", (e) => {
+        const search = e.target.closest("[data-rj-req-search]");
+        if (!search) return;
+        const wrap = search.closest(".rj-req-select");
+        const releaseId = wrap && wrap.dataset.id;
+        if (!releaseId) return;
+        state.journeyAddReqSearch = search.value || "";
+        renderJourneyAddReqPicker(releaseId);
+      });
+
+      journeyBody.addEventListener("pointerdown", (e) => {
+        const track = e.target.closest("[data-rj-gray-drag]");
+        if (!track) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (track.getAttribute("aria-disabled") === "true") return;
+        if (e.button != null && e.button !== 0) return;
+        journeyGrayDragState.active = true;
+        journeyGrayDragState.track = track;
+        journeyGrayDragState.pointerId = e.pointerId;
+        track.classList.add("is-dragging");
+        try {
+          track.setPointerCapture(e.pointerId);
+        } catch (_) {
+          /* ignore */
+        }
+        syncJourneyGrayDragPreview(track, ratioFromJourneyGrayPointer(track, e.clientX));
+      });
+
+      journeyBody.addEventListener("pointermove", (e) => {
+        if (!journeyGrayDragState.active || !journeyGrayDragState.track) return;
+        if (journeyGrayDragState.pointerId !== e.pointerId) return;
+        e.preventDefault();
+        e.stopPropagation();
+        syncJourneyGrayDragPreview(
+          journeyGrayDragState.track,
+          ratioFromJourneyGrayPointer(journeyGrayDragState.track, e.clientX)
+        );
+      });
+
+      journeyBody.addEventListener("pointerup", (e) => {
+        if (!journeyGrayDragState.active) return;
+        if (journeyGrayDragState.pointerId !== e.pointerId) return;
+        endJourneyGrayDrag(e);
+      });
+
+      journeyBody.addEventListener("pointercancel", (e) => {
+        if (!journeyGrayDragState.active) return;
+        if (journeyGrayDragState.pointerId !== e.pointerId) return;
+        endJourneyGrayDrag(e);
+      });
+
+      journeyBody.addEventListener("keydown", (e) => {
+        const track = e.target.closest("[data-rj-gray-drag]");
+        if (track && track.getAttribute("aria-disabled") !== "true") {
+          const step = track.dataset.kind === "binary" ? 100 : e.shiftKey ? 10 : 1;
+          let ratio = Number(track.dataset.ratio) || 0;
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+            e.preventDefault();
+            e.stopPropagation();
+            syncJourneyGrayDragPreview(track, Math.max(0, ratio - step));
+            commitJourneyGrayDrag(track);
+            return;
+          }
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+            e.preventDefault();
+            e.stopPropagation();
+            syncJourneyGrayDragPreview(track, Math.min(100, ratio + step));
+            commitJourneyGrayDrag(track);
+            return;
+          }
+          if (e.key === "Home") {
+            e.preventDefault();
+            e.stopPropagation();
+            syncJourneyGrayDragPreview(track, 0);
+            commitJourneyGrayDrag(track);
+            return;
+          }
+          if (e.key === "End") {
+            e.preventDefault();
+            e.stopPropagation();
+            syncJourneyGrayDragPreview(track, 100);
+            commitJourneyGrayDrag(track);
+            return;
+          }
+        }
+        if (e.target.closest(".rj-inline-editor") || e.target.closest("[data-rj-req-search]")) {
+          e.stopPropagation();
+          return;
+        }
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const card = e.target.closest(".rj-card.is-collapsed[data-journey-id]");
+        if (!card) return;
+        e.preventDefault();
+        closeJourneyAddReqPicker();
+        state.journeyExpandedId = card.dataset.journeyId;
+        renderJourney();
+      });
+    }
+
     document.addEventListener("click", (e) => {
       if (!e.target.closest("[data-status-wrap]")) closeAllStatusDropdowns();
     });
@@ -2064,6 +3079,9 @@
     closeModal("release-create-modal");
     showToast("已新增版本");
     state.page = 1;
+    if (result.row && result.row.id) {
+      state.journeyExpandedId = result.row.id;
+    }
     render();
   }
 
@@ -2091,8 +3109,39 @@
     });
   }
 
+  function setupViewToggle() {
+    const toggle = document.getElementById("release-view-toggle");
+    if (!toggle) return;
+    toggle.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-view]");
+      if (!btn) return;
+      const next = btn.dataset.view === "journey" ? "journey" : "list";
+      if (state.view === next) return;
+      state.view = next;
+      if (next === "journey") {
+        state.journeyExpandedId = null;
+        closeJourneyAddReqPicker();
+      } else {
+        state.page = 1;
+        closeJourneyAddReqPicker();
+      }
+      syncViewUrl(next);
+      render();
+    });
+    window.addEventListener("popstate", () => {
+      const next = getViewFromUrl();
+      if (next === state.view) return;
+      state.view = next;
+      if (next === "journey") {
+        state.journeyExpandedId = null;
+      }
+      render();
+    });
+  }
+
   function init() {
     setupSidebar();
+    setupViewToggle();
     setupDropdown(
       "release-product-btn",
       "release-product-dropdown",
@@ -2101,6 +3150,7 @@
       "product"
     );
     setupDropdown("release-status-btn", "release-status-dropdown", "release-status-value", RELEASE_STATUSES, "status");
+    setupDropdown("release-month-btn", "release-month-dropdown", "release-month-value", getReleaseMonthOptions(), "month");
     setupSearch();
     setupPagination();
     setupSort();
@@ -2119,6 +3169,7 @@
       closeAddReqPicker();
       closeDetailAddReqPicker();
     });
+    syncViewUrl(state.view, { replace: true });
     render();
   }
 

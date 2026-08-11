@@ -33,12 +33,15 @@ function clampChannelGray(channel, value) {
   if (!Number.isFinite(n)) n = 0;
   n = Math.max(0, Math.min(max, n));
   if (kind === "binary") n = n >= max ? max : 0;
+  else if (kind === "percent") n = Math.round(n);
+  else n = Math.round(n); // volume 按整数人数
   return n;
 }
 
 function channelGrayRatio(channel, value) {
   const max = channelGrayMax(channel);
-  return Math.max(0, Math.min(100, ((Number(value) || 0) / max) * 100));
+  const ratio = ((Number(value) || 0) / max) * 100;
+  return Math.max(0, Math.min(100, Math.round(ratio)));
 }
 
 function formatChannelGray(channel, value) {
@@ -51,7 +54,7 @@ function formatChannelGray(channel, value) {
     }
     return String(n);
   }
-  return n >= 100 ? "全量" : `${n}%`;
+  return n >= 100 ? "全量" : `${Math.round(n)}%`;
 }
 
 function fallbackGrayForChannel(channel, grayPercent) {
@@ -133,7 +136,15 @@ function loadCustomReleases() {
     const raw = localStorage.getItem(RELEASE_CUSTOM_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    let changed = false;
+    const next = parsed.map((row) => {
+      if (!row || row.createdAt) return row;
+      changed = true;
+      return { ...row, createdAt: new Date().toISOString() };
+    });
+    if (changed) saveCustomReleases(next);
+    return next;
   } catch (_) {
     return [];
   }
@@ -154,6 +165,7 @@ function buildManualReleaseBase({ product, version, apkUrl, releaseTime }) {
     version: ver,
     apkUrl: String(apkUrl || "").trim(),
     releaseTime: releaseTime || releaseTodayISO(),
+    createdAt: new Date().toISOString(),
     status: "不涉及",
     grayPercent: null,
     rolloutTime: "",
@@ -300,6 +312,7 @@ function mergeReleaseMeta(base, meta) {
     "extraReqIds",
     "excludedReqIds",
     "includeGapReqs",
+    "apkUrl",
   ];
   editable.forEach((key) => {
     if (Object.prototype.hasOwnProperty.call(meta, key)) next[key] = meta[key];
@@ -496,7 +509,17 @@ function upsertRelease(row) {
     extraReqIds: Array.isArray(row.extraReqIds) ? row.extraReqIds.map((id) => Number(id)).filter(Boolean) : [],
     excludedReqIds: Array.isArray(row.excludedReqIds) ? row.excludedReqIds.map((id) => Number(id)).filter(Boolean) : [],
     includeGapReqs: !!row.includeGapReqs,
+    apkUrl: row.apkUrl || "",
   });
+  // 手动新增版本的 APK 也写回 custom 列表，避免 meta 丢失时回退空链接
+  if (row.source === "manual") {
+    const list = loadCustomReleases();
+    const idx = list.findIndex((r) => r && r.id === row.id);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], apkUrl: row.apkUrl || "" };
+      saveCustomReleases(list);
+    }
+  }
   return getReleaseById(row.id);
 }
 
