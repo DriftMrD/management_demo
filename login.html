@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 - 项目管理</title>
+  <link rel="stylesheet" href="styles.css?v=20260812auth11" />
+</head>
+<body class="auth-page">
+  <div class="login-page">
+    <div class="login-card" id="auth-card" data-mode="login">
+      <section class="login-brand" aria-label="品牌">
+        <a class="login-brand-logo" href="index.html" id="login-back" aria-label="返回">
+          <span class="login-brand-icon">
+            <img src="assets/auth/send-horizontal.svg" alt="" />
+          </span>
+          <span class="login-brand-title">项目管理</span>
+        </a>
+        <div class="login-brand-art">
+          <img src="assets/auth/login-illustration.png" alt="需求、迭代、版本流程示意" />
+        </div>
+      </section>
+
+      <div class="auth-panels">
+        <form class="login-form-panel" id="login-form" data-panel="login" novalidate>
+          <header class="login-form-header">
+            <h1>欢迎回来</h1>
+            <p>请使用您的公司邮箱登录项目管理系统</p>
+          </header>
+
+          <div class="login-form-body">
+            <div class="login-field">
+              <label class="login-label" for="login-email">
+                公司邮箱 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/mail.svg" alt="" />
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  autocomplete="username"
+                  placeholder="请输入公司邮箱，例如 user@transsion.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="login-field">
+              <label class="login-label" for="login-password">
+                登录密码 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="请输入密码"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="login-form-meta">
+              <label class="login-remember">
+                <input type="checkbox" id="login-remember" name="remember" />
+                <span>记住我</span>
+              </label>
+              <a class="login-forgot" href="#forgot" id="goto-forgot">忘记密码？</a>
+            </div>
+
+            <p class="login-error" id="login-error" aria-live="polite"></p>
+          </div>
+
+          <div class="login-actions">
+            <button type="submit" class="login-submit">立即登录</button>
+            <p class="login-register-hint">
+              还没有系统账号？
+              <a href="#register" id="goto-register">注册账号</a>
+            </p>
+          </div>
+        </form>
+
+        <form class="register-form-panel" id="register-form" data-panel="register" hidden novalidate>
+          <header class="register-form-header">
+            <div class="register-form-heading">
+              <h1>注册账号</h1>
+              <p>开启高效、高可用、可复用的版本发布流程控制</p>
+            </div>
+            <p class="register-login-hint">
+              已有账号？
+              <a href="#login" class="goto-login-link" id="goto-login">去登录</a>
+            </p>
+          </header>
+
+          <div class="register-divider" aria-hidden="true"></div>
+
+          <div class="register-form-body">
+            <div class="login-field">
+              <label class="login-label" for="reg-name">
+                真实姓名 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/mail.svg" alt="" />
+                <input id="reg-name" name="name" type="text" autocomplete="name" placeholder="请输入您的姓名" required />
+              </div>
+            </div>
+
+            <div class="login-field">
+              <label class="login-label" for="reg-email">
+                公司邮箱 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/mail.svg" alt="" />
+                <input id="reg-email" name="email" type="email" autocomplete="email" placeholder="请输入工作邮箱" required />
+              </div>
+            </div>
+
+            <div class="register-password-row">
+              <div class="login-field">
+                <label class="login-label" for="reg-password">
+                  设置密码 <span class="login-required">*</span>
+                </label>
+                <div class="login-input-wrap">
+                  <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+                  <input id="reg-password" name="password" type="password" autocomplete="new-password" placeholder="6-16位字符" required />
+                </div>
+              </div>
+              <div class="login-field">
+                <label class="login-label" for="reg-password2">
+                  确认密码 <span class="login-required">*</span>
+                </label>
+                <div class="login-input-wrap">
+                  <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+                  <input id="reg-password2" name="password2" type="password" autocomplete="new-password" placeholder="请再次输入密码" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="register-password-row">
+              <div class="login-field">
+                <label class="login-label" for="reg-role-btn">
+                  选择您的系统角色 <span class="login-required">*</span>
+                </label>
+                <div class="register-select" data-select="role">
+                  <button type="button" class="register-select-btn" id="reg-role-btn" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="register-select-value is-placeholder" id="reg-role-value">请选择角色</span>
+                    <img class="register-select-caret" src="assets/auth/chevron-down.svg" alt="" />
+                  </button>
+                  <div class="register-select-menu" id="reg-role-menu" role="listbox" hidden></div>
+                  <input type="hidden" id="reg-role" name="role" value="" />
+                </div>
+              </div>
+
+              <div class="login-field">
+                <label class="login-label" for="reg-product-btn">
+                  配置所属产品 (可多选) <span class="login-required">*</span>
+                </label>
+                <div class="register-select" data-select="product">
+                  <button type="button" class="register-select-btn" id="reg-product-btn" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="register-select-value is-placeholder" id="reg-product-value">请选择所属产品（可多选）</span>
+                    <img class="register-select-caret" src="assets/auth/chevron-down.svg" alt="" />
+                  </button>
+                  <div class="register-select-menu" id="reg-product-menu" role="listbox" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <p class="login-error" id="register-error" aria-live="polite"></p>
+          </div>
+
+          <div class="register-divider" aria-hidden="true"></div>
+
+          <div class="login-actions">
+            <button type="submit" class="login-submit">提交并注册</button>
+          </div>
+        </form>
+
+        <form class="login-form-panel forgot-form-panel" id="forgot-form" data-panel="forgot" hidden novalidate>
+          <header class="login-form-header">
+            <h1>找回密码</h1>
+            <p>请输入您的公司邮箱，我们将发送重置密码链接</p>
+          </header>
+
+          <div class="login-form-body">
+            <div class="login-field">
+              <label class="login-label" for="forgot-email">
+                公司邮箱 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/mail.svg" alt="" />
+                <input
+                  id="forgot-email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="请输入注册时的公司邮箱"
+                  required
+                />
+              </div>
+            </div>
+            <p class="login-status" id="forgot-status" aria-live="polite"></p>
+          </div>
+
+          <div class="login-actions">
+            <button type="submit" class="login-submit">发送重置链接</button>
+            <p class="login-register-hint">
+              想起密码了？
+              <a href="#login" class="goto-login-link">返回登录</a>
+            </p>
+          </div>
+        </form>
+
+        <form class="login-form-panel reset-form-panel" id="reset-form" data-panel="reset" hidden novalidate>
+          <header class="login-form-header">
+            <h1>重置密码</h1>
+            <p>请设置您的新密码</p>
+          </header>
+
+          <div class="login-form-body">
+            <div class="login-field">
+              <label class="login-label" for="reset-password">
+                新密码 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+                <input
+                  id="reset-password"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="请输入新密码，6-16位字符"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="login-field">
+              <label class="login-label" for="reset-password2">
+                确认新密码 <span class="login-required">*</span>
+              </label>
+              <div class="login-input-wrap">
+                <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+                <input
+                  id="reset-password2"
+                  name="password2"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="请再次输入新密码"
+                  required
+                />
+              </div>
+            </div>
+
+            <p class="login-status" id="reset-status" aria-live="polite"></p>
+          </div>
+
+          <div class="login-actions">
+            <button type="submit" class="login-submit">确认重置</button>
+            <p class="login-register-hint">
+              想起来了？
+              <a href="#login" class="goto-login-link">返回登录</a>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js?v=20260812auth5"></script>
+  <script>
+    (function () {
+      const ROLES = ["产品经理 (PM)", "测试 (QA)", "开发 (RD)", "运营 (OP)", "项管 (PMO)"];
+      const PRODUCTS = ["日活", "搜索", "百宝箱", "时刻", "Note"];
+
+      const card = document.getElementById("auth-card");
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+      const forgotForm = document.getElementById("forgot-form");
+      const resetForm = document.getElementById("reset-form");
+      const gotoRegister = document.getElementById("goto-register");
+      const gotoForgot = document.getElementById("goto-forgot");
+      const back = document.getElementById("login-back");
+
+      const selectedProducts = new Set();
+      let forgotRedirectTimer = null;
+      const MODE_TITLES = {
+        login: "登录 - 项目管理",
+        register: "注册 - 项目管理",
+        forgot: "找回密码 - 项目管理",
+        reset: "重置密码 - 项目管理",
+      };
+
+      function setMode(mode) {
+        const next = ["register", "forgot", "reset"].includes(mode) ? mode : "login";
+        card.dataset.mode = next;
+        loginForm.hidden = next !== "login";
+        registerForm.hidden = next !== "register";
+        forgotForm.hidden = next !== "forgot";
+        resetForm.hidden = next !== "reset";
+        document.title = MODE_TITLES[next] || MODE_TITLES.login;
+        closeAllSelects();
+        if (location.hash.replace("#", "") !== next) {
+          history.replaceState(null, "", "#" + next);
+        }
+      }
+
+      function setError(errorEl, message) {
+        if (!errorEl) return;
+        errorEl.textContent = message || "";
+        errorEl.classList.remove("is-success");
+        errorEl.classList.toggle("is-visible", Boolean(message));
+        if (message) errorEl.classList.add("is-error");
+        else errorEl.classList.remove("is-error");
+      }
+
+      function setStatus(el, message, type) {
+        if (!el) return;
+        el.textContent = message || "";
+        el.classList.toggle("is-visible", Boolean(message));
+        el.classList.toggle("is-error", type === "error" && Boolean(message));
+        el.classList.toggle("is-success", type === "success" && Boolean(message));
+      }
+
+      function safeRedirect(raw) {
+        if (!raw) return "index.html";
+        try {
+          const decoded = decodeURIComponent(raw);
+          if (/^https?:\/\//i.test(decoded) || decoded.includes("://") || decoded.startsWith("//")) {
+            return "index.html";
+          }
+          if (decoded.includes("..")) return "index.html";
+          if (!/\.html(\?|#|$)/.test(decoded) && !decoded.endsWith(".html")) return "index.html";
+          return decoded;
+        } catch {
+          return "index.html";
+        }
+      }
+
+      function nameFromEmail(email) {
+        const local = String(email || "").split("@")[0] || "";
+        if (!local) return PMAuth.DEFAULT_USER.name;
+        if (/[\u4e00-\u9fff]/.test(local)) return local;
+        return PMAuth.DEFAULT_USER.name;
+      }
+
+      function closeAllSelects(except) {
+        document.querySelectorAll(".register-select").forEach((wrap) => {
+          if (wrap === except) return;
+          const menu = wrap.querySelector(".register-select-menu");
+          const btn = wrap.querySelector(".register-select-btn");
+          if (menu) menu.hidden = true;
+          if (btn) btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      function setupRoleSelect() {
+        const menu = document.getElementById("reg-role-menu");
+        const btn = document.getElementById("reg-role-btn");
+        const valueEl = document.getElementById("reg-role-value");
+        const hidden = document.getElementById("reg-role");
+        const wrap = btn.closest(".register-select");
+
+        menu.innerHTML = ROLES.map(
+          (role) => `<button type="button" class="register-select-option" role="option" data-value="${role}">${role}</button>`
+        ).join("");
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = menu.hidden;
+          closeAllSelects();
+          menu.hidden = !open;
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+
+        menu.addEventListener("click", (e) => {
+          const opt = e.target.closest(".register-select-option");
+          if (!opt) return;
+          hidden.value = opt.dataset.value;
+          valueEl.textContent = opt.dataset.value;
+          valueEl.classList.remove("is-placeholder");
+          menu.querySelectorAll(".register-select-option").forEach((el) => {
+            el.classList.toggle("is-selected", el === opt);
+          });
+          menu.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      function syncProductValue() {
+        const valueEl = document.getElementById("reg-product-value");
+        if (!selectedProducts.size) {
+          valueEl.textContent = "请选择所属产品（可多选）";
+          valueEl.classList.add("is-placeholder");
+          return;
+        }
+        valueEl.textContent = Array.from(selectedProducts).join("、");
+        valueEl.classList.remove("is-placeholder");
+      }
+
+      function setupProductSelect() {
+        const menu = document.getElementById("reg-product-menu");
+        const btn = document.getElementById("reg-product-btn");
+
+        menu.innerHTML = PRODUCTS.map(
+          (p) =>
+            `<button type="button" class="register-select-option" role="option" data-value="${p}" aria-selected="false">${p}</button>`
+        ).join("");
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = menu.hidden;
+          closeAllSelects();
+          menu.hidden = !open;
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+
+        menu.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const opt = e.target.closest(".register-select-option");
+          if (!opt) return;
+          const val = opt.dataset.value;
+          if (selectedProducts.has(val)) selectedProducts.delete(val);
+          else selectedProducts.add(val);
+          opt.classList.toggle("is-selected", selectedProducts.has(val));
+          opt.setAttribute("aria-selected", selectedProducts.has(val) ? "true" : "false");
+          syncProductValue();
+        });
+      }
+
+      if (back) {
+        back.addEventListener("click", function (e) {
+          if (window.history.length > 1) {
+            e.preventDefault();
+            window.history.back();
+          }
+        });
+      }
+
+      gotoRegister.addEventListener("click", function (e) {
+        e.preventDefault();
+        setMode("register");
+      });
+
+      gotoForgot.addEventListener("click", function (e) {
+        e.preventDefault();
+        setMode("forgot");
+      });
+
+      document.querySelectorAll(".goto-login-link").forEach((el) => {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (forgotRedirectTimer) {
+            clearTimeout(forgotRedirectTimer);
+            forgotRedirectTimer = null;
+          }
+          const submitBtn = forgotForm.querySelector(".login-submit");
+          if (submitBtn) submitBtn.disabled = false;
+          setMode("login");
+        });
+      });
+
+      document.addEventListener("click", () => closeAllSelects());
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAllSelects();
+      });
+
+      setupRoleSelect();
+      setupProductSelect();
+
+      const hashMode = location.hash.replace("#", "");
+      setMode(["register", "forgot", "reset"].includes(hashMode) ? hashMode : "login");
+
+      loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const errorEl = document.getElementById("login-error");
+        const emailInput = document.getElementById("login-email");
+        const passwordInput = document.getElementById("login-password");
+        setError(errorEl, "");
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email || !password) {
+          setError(errorEl, "请填写公司邮箱和登录密码");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setError(errorEl, "请输入有效的公司邮箱地址");
+          return;
+        }
+
+        PMAuth.login({
+          name: nameFromEmail(email),
+          email: email,
+          role: "项目管理员",
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = safeRedirect(params.get("redirect"));
+      });
+
+      registerForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const errorEl = document.getElementById("register-error");
+        setError(errorEl, "");
+
+        const name = document.getElementById("reg-name").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const password2 = document.getElementById("reg-password2").value;
+        const role = document.getElementById("reg-role").value;
+
+        if (!name || !email || !password || !password2 || !role || !selectedProducts.size) {
+          setError(errorEl, "请完整填写所有必填项");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setError(errorEl, "请输入有效的公司邮箱地址");
+          return;
+        }
+        if (password.length < 6 || password.length > 16) {
+          setError(errorEl, "密码需为 6-16 位字符");
+          return;
+        }
+        if (password !== password2) {
+          setError(errorEl, "两次输入的密码不一致");
+          return;
+        }
+
+        PMAuth.login({
+          name: name,
+          email: email,
+          role: role,
+          products: Array.from(selectedProducts),
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = safeRedirect(params.get("redirect"));
+      });
+
+      forgotForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const statusEl = document.getElementById("forgot-status");
+        const emailInput = document.getElementById("forgot-email");
+        const submitBtn = forgotForm.querySelector(".login-submit");
+        setStatus(statusEl, "", "");
+        if (forgotRedirectTimer) {
+          clearTimeout(forgotRedirectTimer);
+          forgotRedirectTimer = null;
+        }
+
+        const email = emailInput.value.trim();
+        if (!email) {
+          setStatus(statusEl, "请填写公司邮箱", "error");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setStatus(statusEl, "请输入有效的公司邮箱地址", "error");
+          return;
+        }
+
+        setStatus(statusEl, "重置链接已发送，请查收邮箱", "success");
+        if (submitBtn) submitBtn.disabled = true;
+        forgotRedirectTimer = setTimeout(function () {
+          forgotRedirectTimer = null;
+          if (submitBtn) submitBtn.disabled = false;
+          try {
+            sessionStorage.setItem("pm_reset_email", email);
+          } catch (_) {}
+          setMode("reset");
+        }, 3000);
+      });
+
+      resetForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const statusEl = document.getElementById("reset-status");
+        const pwd = document.getElementById("reset-password").value;
+        const pwd2 = document.getElementById("reset-password2").value;
+        setStatus(statusEl, "", "");
+
+        if (!pwd || !pwd2) {
+          setStatus(statusEl, "请填写新密码", "error");
+          return;
+        }
+        if (pwd.length < 6 || pwd.length > 16) {
+          setStatus(statusEl, "新密码需为 6-16 位字符", "error");
+          return;
+        }
+        if (pwd !== pwd2) {
+          setStatus(statusEl, "两次输入的密码不一致", "error");
+          return;
+        }
+
+        setStatus(statusEl, "密码重置成功，请使用新密码登录", "success");
+        setTimeout(function () {
+          setMode("login");
+        }, 1000);
+      });
+    })();
+  </script>
+</body>
+</html>

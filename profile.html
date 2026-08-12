@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人设置 - 项目管理</title>
+  <link rel="stylesheet" href="styles.css?v=20260812profile6" />
+</head>
+<body>
+  <div class="page profile-page">
+    <header class="page-header profile-page-header">
+      <nav class="breadcrumb">
+        <a class="crumb crumb-link" href="index.html">项目管理</a>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb">个人中心</span>
+        <img class="crumb-sep" src="assets/icons/chevron-right.svg" alt="" />
+        <span class="crumb current">个人设置</span>
+      </nav>
+    </header>
+
+    <main class="profile-main">
+      <aside class="profile-card" aria-label="个人资料">
+        <div class="profile-avatar" id="profile-avatar">张</div>
+        <div class="profile-identity">
+          <h1 id="profile-name">张伟</h1>
+          <p id="profile-email">zhangwei@company.com</p>
+        </div>
+        <div class="profile-divider" aria-hidden="true"></div>
+        <dl class="profile-meta">
+          <div class="profile-meta-row">
+            <dt>角色</dt>
+            <dd id="profile-role">产品经理 (PM)</dd>
+          </div>
+          <div class="profile-meta-row">
+            <dt>所属产品</dt>
+            <dd id="profile-products">日活、Note</dd>
+          </div>
+        </dl>
+        <button type="button" class="profile-logout-btn" id="profile-logout">退出登录</button>
+      </aside>
+
+      <section class="profile-settings" aria-label="个人设置">
+        <header class="profile-settings-header">
+          <h2>个人设置</h2>
+          <p>请保护好您的权限凭证。密码修改后需重新登录系统</p>
+        </header>
+
+        <form class="profile-section-card" id="password-form" novalidate>
+          <h3>安全密码修改</h3>
+
+          <div class="login-field">
+            <label class="login-label" for="pwd-old">
+              当前旧密码 <span class="login-required">*</span>
+            </label>
+            <div class="login-input-wrap">
+              <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+              <input id="pwd-old" type="password" autocomplete="current-password" placeholder="请输入您当前的登录密码" required />
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label class="login-label" for="pwd-new">
+              设置新密码 <span class="login-required">*</span>
+            </label>
+            <div class="login-input-wrap">
+              <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+              <input id="pwd-new" type="password" autocomplete="new-password" placeholder="新密码长度需在6-16位" required />
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label class="login-label" for="pwd-confirm">
+              确认新密码 <span class="login-required">*</span>
+            </label>
+            <div class="login-input-wrap">
+              <img class="login-input-icon" src="assets/auth/lock.svg" alt="" />
+              <input id="pwd-confirm" type="password" autocomplete="new-password" placeholder="请再次输入新密码" required />
+            </div>
+          </div>
+
+          <p class="login-status" id="pwd-status" aria-live="polite"></p>
+          <button type="submit" class="profile-primary-btn">修改密码</button>
+        </form>
+
+        <form class="profile-section-card" id="role-form" novalidate>
+          <h3>角色与产品设置</h3>
+
+          <div class="login-field">
+            <label class="login-label" for="profile-role-btn">角色设置</label>
+            <div class="register-select" data-select="role">
+              <button type="button" class="register-select-btn" id="profile-role-btn" aria-haspopup="listbox" aria-expanded="false">
+                <span class="register-select-value is-placeholder" id="profile-role-value">请选择角色</span>
+                <img class="register-select-caret" src="assets/auth/chevron-down.svg" alt="" />
+              </button>
+              <div class="register-select-menu profile-select-menu" id="profile-role-menu" role="listbox" hidden></div>
+              <input type="hidden" id="profile-role-input" value="" />
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label class="login-label" for="profile-product-btn">所属产品配置</label>
+            <div class="register-select" data-select="product">
+              <button type="button" class="register-select-btn" id="profile-product-btn" aria-haspopup="listbox" aria-expanded="false">
+                <span class="register-select-value is-placeholder" id="profile-product-value">请选择所属产品</span>
+                <img class="register-select-caret" src="assets/auth/chevron-down.svg" alt="" />
+              </button>
+              <div class="register-select-menu profile-select-menu" id="profile-product-menu" role="listbox" hidden></div>
+            </div>
+          </div>
+
+          <p class="login-status" id="role-status" aria-live="polite"></p>
+          <button type="submit" class="profile-primary-btn profile-primary-btn-sm">保存设置</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="auth.js?v=20260812auth5"></script>
+  <script>
+    (function () {
+      const ROLES = ["产品经理 (PM)", "测试 (QA)", "开发 (RD)", "运营 (OP)", "项管 (PMO)"];
+      const PRODUCTS = ["日活", "搜索", "百宝箱", "时刻", "Note"];
+      const selectedProducts = new Set();
+
+      function requireLogin() {
+        const user = PMAuth.getUser();
+        if (!user) {
+          window.location.href = "login.html?redirect=" + encodeURIComponent("profile.html");
+          return null;
+        }
+        return user;
+      }
+
+      function setStatus(el, message, type) {
+        if (!el) return;
+        el.textContent = message || "";
+        el.classList.toggle("is-visible", Boolean(message));
+        el.classList.toggle("is-error", type === "error" && Boolean(message));
+        el.classList.toggle("is-success", type === "success" && Boolean(message));
+      }
+
+      function closeAllSelects() {
+        document.querySelectorAll(".register-select").forEach((wrap) => {
+          const menu = wrap.querySelector(".register-select-menu");
+          const btn = wrap.querySelector(".register-select-btn");
+          if (menu) menu.hidden = true;
+          if (btn) btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      function renderProfile(user) {
+        const name = user.name || "张伟";
+        const email = user.email || "zhangwei@company.com";
+        const role = user.role || "产品经理 (PM)";
+        const products = Array.isArray(user.products) && user.products.length ? user.products : ["日活", "Note"];
+
+        document.getElementById("profile-avatar").textContent = name.slice(0, 2);
+        document.getElementById("profile-name").textContent = name;
+        document.getElementById("profile-email").textContent = email;
+        document.getElementById("profile-role").textContent = role;
+        document.getElementById("profile-products").textContent = products.join("、");
+
+        const roleValue = document.getElementById("profile-role-value");
+        const roleInput = document.getElementById("profile-role-input");
+        const matchedRole = ROLES.find((r) => r === role || r.startsWith(role) || role.startsWith(r.replace(/\s*\(.*\)$/, ""))) || "";
+        if (matchedRole) {
+          roleInput.value = matchedRole;
+          roleValue.textContent = matchedRole;
+          roleValue.classList.remove("is-placeholder");
+        }
+
+        selectedProducts.clear();
+        products.forEach((p) => {
+          if (PRODUCTS.includes(p)) selectedProducts.add(p);
+        });
+        syncProductValue();
+      }
+
+      function syncProductValue() {
+        const valueEl = document.getElementById("profile-product-value");
+        if (!selectedProducts.size) {
+          valueEl.textContent = "请选择所属产品";
+          valueEl.classList.add("is-placeholder");
+          return;
+        }
+        valueEl.textContent = Array.from(selectedProducts).join("、");
+        valueEl.classList.remove("is-placeholder");
+      }
+
+      function setupRoleSelect() {
+        const menu = document.getElementById("profile-role-menu");
+        const btn = document.getElementById("profile-role-btn");
+        const valueEl = document.getElementById("profile-role-value");
+        const hidden = document.getElementById("profile-role-input");
+
+        menu.innerHTML = ROLES.map(
+          (role) => `<button type="button" class="register-select-option" role="option" data-value="${role}">${role}</button>`
+        ).join("");
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = menu.hidden;
+          closeAllSelects();
+          menu.hidden = !open;
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+
+        menu.addEventListener("click", (e) => {
+          const opt = e.target.closest(".register-select-option");
+          if (!opt) return;
+          hidden.value = opt.dataset.value;
+          valueEl.textContent = opt.dataset.value;
+          valueEl.classList.remove("is-placeholder");
+          menu.querySelectorAll(".register-select-option").forEach((el) => {
+            el.classList.toggle("is-selected", el === opt);
+          });
+          menu.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      function setupProductSelect() {
+        const menu = document.getElementById("profile-product-menu");
+        const btn = document.getElementById("profile-product-btn");
+
+        menu.innerHTML = PRODUCTS.map(
+          (p) =>
+            `<button type="button" class="register-select-option" role="option" data-value="${p}" aria-selected="false">${p}</button>`
+        ).join("");
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = menu.hidden;
+          closeAllSelects();
+          menu.hidden = !open;
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+          menu.querySelectorAll(".register-select-option").forEach((el) => {
+            const on = selectedProducts.has(el.dataset.value);
+            el.classList.toggle("is-selected", on);
+            el.setAttribute("aria-selected", on ? "true" : "false");
+          });
+        });
+
+        menu.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const opt = e.target.closest(".register-select-option");
+          if (!opt) return;
+          const val = opt.dataset.value;
+          if (selectedProducts.has(val)) selectedProducts.delete(val);
+          else selectedProducts.add(val);
+          opt.classList.toggle("is-selected", selectedProducts.has(val));
+          opt.setAttribute("aria-selected", selectedProducts.has(val) ? "true" : "false");
+          syncProductValue();
+        });
+      }
+
+      const user = requireLogin();
+      if (!user) return;
+
+      renderProfile(user);
+      setupRoleSelect();
+      setupProductSelect();
+
+      document.addEventListener("click", closeAllSelects);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAllSelects();
+      });
+
+      document.getElementById("profile-logout").addEventListener("click", () => {
+        PMAuth.clearUser();
+        window.location.href = "login.html";
+      });
+
+      document.getElementById("password-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const status = document.getElementById("pwd-status");
+        const oldPwd = document.getElementById("pwd-old").value;
+        const nextPwd = document.getElementById("pwd-new").value;
+        const confirmPwd = document.getElementById("pwd-confirm").value;
+        setStatus(status, "", "");
+
+        if (!oldPwd || !nextPwd || !confirmPwd) {
+          setStatus(status, "请完整填写密码信息", "error");
+          return;
+        }
+        if (nextPwd.length < 6 || nextPwd.length > 16) {
+          setStatus(status, "新密码需为6-16位", "error");
+          return;
+        }
+        if (nextPwd !== confirmPwd) {
+          setStatus(status, "两次输入的新密码不一致", "error");
+          return;
+        }
+
+        setStatus(status, "密码修改成功", "success");
+        document.getElementById("pwd-old").value = "";
+        document.getElementById("pwd-new").value = "";
+        document.getElementById("pwd-confirm").value = "";
+      });
+
+      document.getElementById("role-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const status = document.getElementById("role-status");
+        const role = document.getElementById("profile-role-input").value;
+        setStatus(status, "", "");
+
+        if (!role || !selectedProducts.size) {
+          setStatus(status, "请选择角色和所属产品", "error");
+          return;
+        }
+
+        const current = PMAuth.getUser() || {};
+        const products = Array.from(selectedProducts);
+        PMAuth.setUser({
+          ...current,
+          name: current.name || "张伟",
+          email: current.email || "zhangwei@company.com",
+          role: role,
+          products: products,
+        });
+
+        document.getElementById("profile-role").textContent = role;
+        document.getElementById("profile-products").textContent = products.join("、");
+        setStatus(status, "设置已保存", "success");
+        if (typeof PMAuth.render === "function") PMAuth.render();
+      });
+    })();
+  </script>
+</body>
+</html>
