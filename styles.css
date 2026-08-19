@@ -8500,6 +8500,424 @@ button.gantt-today-jump:hover .gantt-today-swatch {
   color: #3d7a55;
 }
 
+/* ---------- 研测专区 · 需求拆解视图 ---------- */
+.rd-workspace-toolbar {
+  align-items: center;
+}
+
+.rd-workspace-page .table-outer[hidden] {
+  display: none !important;
+}
+
+.rd-view-toggle {
+  flex-shrink: 0;
+}
+
+.rd-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.rd-subbar .search-box {
+  width: 220px;
+  border-radius: 4px;
+}
+
+.rd-subbar .filter-btn {
+  border-radius: 4px;
+}
+
+.rd-subbar .filter-chevron {
+  width: 12px;
+  height: 12px;
+  opacity: 0.7;
+}
+
+.rd-subbar .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-mid);
+}
+
+.rd-subbar .btn-secondary img {
+  width: 14px;
+  height: 14px;
+}
+
+.rd-subbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rd-bd-status-filter {
+  width: 176px;
+}
+
+.rd-bd-status-filter .filter-btn {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.rd-bd-status-filter .dropdown {
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.rd-toolbar-work,
+.rd-toolbar-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rd-toolbar-work[hidden],
+.rd-toolbar-breakdown[hidden] {
+  display: none !important;
+}
+
+.rd-breakdown-table {
+  min-width: 1100px;
+  table-layout: fixed;
+}
+
+.rd-breakdown-table thead th {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.rd-breakdown-table .th-bd-plus,
+.rd-breakdown-table .td-bd-plus {
+  width: 40px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rd-breakdown-table .rd-bd-row td {
+  height: 52px;
+  padding-top: 0;
+  padding-bottom: 0;
+  vertical-align: middle;
+}
+
+.rd-bd-plus-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+}
+
+.rd-breakdown-table .th-bd-title,
+.rd-breakdown-table .td-bd-title {
+  width: 26%;
+  padding-left: 12px;
+}
+
+.rd-breakdown-table .td-bd-title {
+  padding-left: 0;
+}
+
+.rd-breakdown-table .th-bd-code,
+.rd-breakdown-table .td-bd-code,
+.rd-breakdown-table .th-bd-status,
+.rd-breakdown-table .td-bd-status,
+.rd-breakdown-table .th-bd-priority,
+.rd-breakdown-table .td-bd-priority,
+.rd-breakdown-table .th-bd-type,
+.rd-breakdown-table .td-bd-type,
+.rd-breakdown-table .th-bd-version,
+.rd-breakdown-table .td-bd-version,
+.rd-breakdown-table .th-bd-product,
+.rd-breakdown-table .td-bd-product {
+  width: auto;
+}
+
+.rd-breakdown-table .th-bd-status,
+.rd-breakdown-table .td-bd-status {
+  overflow: visible;
+}
+
+.rd-breakdown-table .iterations-data-row:nth-child(even) td:not(.td-product):not(.td-iter) {
+  background: #fff;
+}
+
+.rd-breakdown-table .rd-bd-row.is-root td {
+  background: #f9fafb;
+}
+
+.rd-breakdown-table .rd-bd-row:hover td,
+.rd-breakdown-table .iterations-data-row.rd-bd-row:hover td {
+  background: #f0f4f9;
+}
+
+.rd-bd-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #5d7599;
+  padding: 0;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.rd-bd-plus img {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.rd-bd-plus:hover {
+  background: #4d6588;
+}
+
+.rd-bd-plus-spacer {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.rd-bd-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rd-bd-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.rd-bd-toggle.is-leaf {
+  cursor: default;
+}
+
+.rd-bd-toggle img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.rd-bd-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.rd-bd-title.is-ir {
+  font-weight: 700;
+}
+
+.rd-bd-title.is-sr {
+  font-weight: 500;
+}
+
+.rd-bd-title.is-ar {
+  font-weight: 400;
+  color: var(--text-mid);
+}
+
+.rd-bd-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.rd-bd-badge.is-doing {
+  background: #e5edf7;
+  color: #4d5c73;
+}
+
+.rd-bd-badge.is-done {
+  background: #ebf0e8;
+  color: #617a61;
+}
+
+.rd-bd-badge.is-todo {
+  background: #fce8e8;
+  color: #c75c5c;
+}
+
+.rd-bd-badge.is-locked {
+  cursor: default;
+}
+
+.rd-bd-flip {
+  display: inline-block;
+  width: 72px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  perspective: 640px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.rd-bd-flip-inner {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 22px;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0.15, 0.2, 1);
+}
+
+.rd-bd-flip.is-flipping .rd-bd-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.rd-bd-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rd-bd-flip-face.is-back {
+  transform: rotateY(180deg);
+}
+
+.rd-bd-flip:not(.is-flipping):hover .rd-bd-badge.is-todo {
+  background: #f4c4c4;
+  color: #b44545;
+}
+
+.rd-bd-flip:not(.is-flipping):hover .rd-bd-badge.is-done {
+  background: #d5e2d0;
+  color: #4d684d;
+}
+
+.rd-bd-flip.is-flipping {
+  pointer-events: none;
+}
+
+.rd-bd-plus.is-disabled {
+  background: #d1d6e0;
+  pointer-events: none;
+}
+
+.rd-breakdown-table .rd-bd-row.is-draft td,
+.rd-breakdown-table .rd-bd-row.is-draft:hover td,
+.rd-breakdown-table .iterations-data-row.rd-bd-row.is-draft:hover td {
+  background: #f4f8fd;
+  border-top: 1px solid #b4d0f3;
+  border-bottom: 1px solid #b4d0f3;
+}
+
+.rd-bd-draft-input {
+  width: 220px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-dark);
+  outline: none;
+  box-shadow: none;
+}
+
+.rd-bd-draft-input:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.rd-bd-draft-input::placeholder {
+  color: #9ca3af;
+}
+
+.rd-bd-muted {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.rd-bd-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rd-bd-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.rd-bd-action.is-confirm {
+  background: #5d7599;
+}
+
+.rd-bd-action.is-confirm:hover {
+  background: #4d6588;
+}
+
+.rd-bd-code-input {
+  width: 100%;
+  max-width: 148px;
+}
+
+.rd-bd-action.is-cancel {
+  background: transparent;
+}
+
+.rd-bd-action.is-cancel:hover {
+  background: #e8eef6;
+}
+
+.rd-bd-action img {
+  display: block;
+}
+
+.rd-bd-action.is-confirm img,
+.rd-bd-action.is-cancel img {
+  width: 12px;
+  height: 12px;
+}
+
 /* ---------- 研测工作详情（复用迭代详情布局） ---------- */
 .rd-detail-header-right {
   display: flex;
@@ -11974,7 +12392,6 @@ button.gantt-today-jump:hover .gantt-today-swatch {
 .modal.modal-release-plan {
   width: 720px;
   border-radius: 12px;
-  overflow: visible;
 }
 
 .modal.modal-release-plan .modal-header {
@@ -11982,11 +12399,18 @@ button.gantt-today-jump:hover .gantt-today-swatch {
 }
 
 .modal.modal-release-plan .modal-footer {
+  border-top: 1px solid var(--border);
   border-radius: 0 0 12px 12px;
 }
 
 .modal.modal-release-plan .modal-body {
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal.modal-release-plan .modal-body > * {
+  flex-shrink: 0;
 }
 
 .modal.modal-release-plan .select-menu {
@@ -12014,13 +12438,18 @@ button.gantt-today-jump:hover .gantt-today-swatch {
   gap: 8px;
 }
 
+.modal.modal-release-plan .field-row .select-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
 .modal.modal-release-plan .select-menu.is-channel {
   padding: 0;
   border-color: #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  max-height: none;
+  max-height: 240px;
 }
 
 .modal.modal-release-plan .select-menu.is-channel button {

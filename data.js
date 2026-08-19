@@ -175,6 +175,40 @@ function isAR(row) {
   return !!(row && row.reqLevel === "AR");
 }
 
+function getReqDisplayCode(row) {
+  if (!row) return "";
+  if (row.reqCode) return row.reqCode;
+  if (isAR(row)) return makeArCode(row.id, row.requestDate);
+  if (isSR(row)) return makeSrCode(row.id, row.requestDate);
+  return makeReqCode(row.id, row.requestDate);
+}
+
+/** 需求拆解状态：仅 待拆解 / 拆解完成 */
+const BREAKDOWN_STATUSES = ["待拆解", "拆解完成"];
+
+function canEditBreakdownStatus(row) {
+  if (isSR(row)) return true;
+  if (isIR(row) && getChildSrsOf(row.id).length) return true;
+  return false;
+}
+
+function getBreakdownStatus(row) {
+  if (!row) return "待拆解";
+  if (isIR(row)) {
+    if (!getChildSrsOf(row.id).length) return "待拆解";
+    if (row.breakdownStatus === "待拆解" || row.breakdownStatus === "拆解完成") {
+      return row.breakdownStatus;
+    }
+    return "拆解完成";
+  }
+  if (row.breakdownStatus === "待拆解" || row.breakdownStatus === "拆解完成") {
+    return row.breakdownStatus;
+  }
+  if (isAR(row)) return "拆解完成";
+  if (isSR(row) && row.parentId) return "拆解完成";
+  return "待拆解";
+}
+
 /** 可进入迭代/甘特的叶子需求：SR 或 AR */
 function isIterationLeaf(row) {
   return isSR(row) || isAR(row);

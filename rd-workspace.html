@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>研测工作专区</title>
-  <link rel="stylesheet" href="styles.css?v=20260724rd3" />
+  <link rel="stylesheet" href="styles.css?v=20260819bd17" />
 </head>
 <body>
   <div class="page iterations-page rd-workspace-page">
@@ -20,12 +20,12 @@
       <div class="title-row">
         <div class="title-left">
           <h1>研测工作专区</h1>
-          <p>按迭代追踪研测前置、开发测试状态与质量/代码指标</p>
+          <p id="rd-page-desc">按迭代追踪研测前置、开发测试状态与质量/代码指标</p>
         </div>
-        <div class="quick-filters iterations-toolbar">
-          <div class="search-box">
-            <img src="assets/icons/search.svg" alt="" />
-            <input id="rd-search-input" type="text" placeholder="搜索迭代号..." />
+        <div class="quick-filters iterations-toolbar rd-workspace-toolbar">
+          <div class="view-toggle rd-view-toggle" id="rd-view-toggle" role="group" aria-label="视图切换">
+            <button type="button" class="toggle-btn active" data-view="work">迭代视图</button>
+            <button type="button" class="toggle-btn" data-view="breakdown">需求视图</button>
           </div>
           <div class="filter-btn-wrap">
             <button class="filter-btn" id="rd-product-filter-btn" type="button">
@@ -34,6 +34,17 @@
             </button>
             <div class="dropdown" id="rd-product-dropdown" hidden></div>
           </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="table-outer iterations-table-outer" id="rd-work-view">
+      <div class="rd-subbar" id="rd-toolbar-work">
+        <div class="search-box">
+          <img src="assets/icons/search.svg" alt="" />
+          <input id="rd-search-input" type="text" placeholder="搜索迭代号..." />
+        </div>
+        <div class="rd-subbar-cluster">
           <div class="filter-btn-wrap">
             <button class="filter-btn" id="rd-dev-filter-btn" type="button">
               <span>开发状态: <b id="rd-dev-filter-value">全部</b></span>
@@ -58,9 +69,6 @@
           </label>
         </div>
       </div>
-    </header>
-
-    <main class="table-outer iterations-table-outer">
       <div class="table-wrapper">
         <table class="iterations-data-table rd-workspace-table">
           <thead>
@@ -83,14 +91,53 @@
       </div>
     </main>
 
+    <main class="table-outer iterations-table-outer rd-breakdown-outer" id="rd-breakdown-view" hidden>
+      <div class="rd-subbar" id="rd-toolbar-breakdown">
+        <div class="search-box">
+          <img src="assets/icons/search.svg" alt="" />
+          <input id="rd-bd-search-input" type="text" placeholder="搜索需求编号或名称" />
+        </div>
+        <div class="rd-subbar-cluster">
+          <label class="progress-done-toggle" title="勾选后展开全部子需求">
+            <input type="checkbox" id="rd-bd-expand-all" />
+            <span>展开全部</span>
+          </label>
+          <div class="filter-btn-wrap rd-bd-status-filter">
+            <button class="filter-btn" id="rd-bd-status-btn" type="button">
+              <span>拆解状态: <b id="rd-bd-status-value">全部</b></span>
+              <img src="assets/icons/chevron-down.svg" alt="" class="filter-chevron" />
+            </button>
+            <div class="dropdown" id="rd-bd-status-dropdown" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrapper rd-breakdown-wrapper">
+        <table class="iterations-data-table rd-breakdown-table">
+          <thead>
+            <tr class="iterations-table-header">
+              <th class="th-bd-plus"></th>
+              <th class="th-bd-title">标题</th>
+              <th class="th-bd-code">需求编号</th>
+              <th class="th-bd-status">拆解状态</th>
+              <th class="th-bd-priority">优先级</th>
+              <th class="th-bd-type">落地类型</th>
+              <th class="th-bd-version">落地版本</th>
+              <th class="th-bd-product">所属产品</th>
+            </tr>
+          </thead>
+          <tbody id="rd-breakdown-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+
     <footer class="pagination-bar">
       <span id="rd-total-count">共 0 条迭代记录</span>
       <div class="pagination" id="rd-pagination"></div>
     </footer>
   </div>
 
-  <script src="data.js?v=20260727rd8"></script>
-  <script src="rd-workspace.js?v=20260727rd8"></script>
+  <script src="data.js?v=20260819bd20"></script>
+  <script src="rd-workspace.js?v=20260819bd21"></script>
   <script src="auth.js?v=20260812auth5"></script>
 </body>
 </html>
